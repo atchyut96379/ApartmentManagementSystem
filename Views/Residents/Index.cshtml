@@ -1,0 +1,43 @@
+@model IEnumerable<ApartmentManagementSystem.Models.Resident>
+
+@{
+    ViewData["Title"] = "Residents List";
+}
+
+<h1>Residents List</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Add Resident</a>
+</p>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Flat Number</th>
+            <th>Owner Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Owner</th>
+            <th>Created</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.FlatNumber</td>
+                <td>@item.OwnerName</td>
+                <td>@item.PhoneNumber</td>
+                <td>@item.Email</td>
+                <td>@(item.IsOwner ? "Yes" : "No")</td>
+                <td>@item.CreatedDate.ToString("dd-MM-yyyy HH:mm")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

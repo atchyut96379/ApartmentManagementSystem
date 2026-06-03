@@ -1,0 +1,94 @@
+﻿@model ApartmentManagementSystem.Models.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="card shadow p-4">
+    <h1>Register</h1>
+
+    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+    {
+        <div class="alert alert-danger mb-2">@error.ErrorMessage</div>
+    }
+
+    @if (Model.ShowLoginLink)
+    {
+        <div class="alert alert-info">
+            You already have an account.
+            <a asp-controller="Account"
+               asp-action="Login"
+               asp-route-email="@Model.Email"
+               class="alert-link fw-bold">
+                Click here to log in
+            </a>
+        </div>
+    }
+
+    <form asp-controller="Account" asp-action="Register" method="post">
+
+        <div class="form-group mb-3">
+            <label asp-for="FullName"></label>
+            <input asp-for="FullName" class="form-control" required />
+            <span asp-validation-for="FullName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="Email"></label>
+            <input asp-for="Email" class="form-control" required />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="Password"></label>
+            <input asp-for="Password" class="form-control" required />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="Role"></label>
+            <select asp-for="Role" id="role" class="form-control" required>
+                <option value="Resident">Resident</option>
+                <option value="Admin">Admin</option>
+            </select>
+        </div>
+
+        <div id="resident-fields">
+            <div class="form-group mb-3">
+                <label asp-for="FlatNumber"></label>
+                <input asp-for="FlatNumber" id="flatNumber" class="form-control" placeholder="e.g. 408" />
+                <span asp-validation-for="FlatNumber" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="PhoneNumber"></label>
+                <input asp-for="PhoneNumber" class="form-control" />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Register</button>
+
+        <p class="mt-3 mb-0">
+            Already registered?
+            <a asp-controller="Account" asp-action="Login">Log in</a>
+        </p>
+
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const roleSelect = document.getElementById('role');
+            const flatInput = document.getElementById('flatNumber');
+
+            function updateResidentFields() {
+                const isResident = roleSelect.value === 'Resident';
+                flatInput.required = isResident;
+            }
+
+            roleSelect.addEventListener('change', updateResidentFields);
+            updateResidentFields();
+        })();
+    </script>
+}

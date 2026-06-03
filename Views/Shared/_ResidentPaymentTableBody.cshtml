@@ -1,0 +1,65 @@
+@using ApartmentManagementSystem.Models
+@model (List<Maintenance> Items, ResidentPaymentsViewModel Parent, bool ShowPayNow)
+
+<table class="table table-bordered table-hover mb-0">
+    <thead class="table-dark">
+        <tr>
+            <th>Flat</th>
+            <th>Month</th>
+            <th>Year</th>
+            <th>Amount</th>
+            <th>Status</th>
+            @if (Model.ShowPayNow)
+            {
+                <th>Pay</th>
+            }
+            @if (Model.Parent.ShowReceiptColumns && !Model.ShowPayNow)
+            {
+                <th>Receipt</th>
+                <th>Paid Date</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.FlatNumber</td>
+                <td>@item.Month</td>
+                <td>@item.Year</td>
+                <td>₹@item.Amount.ToString("N2")</td>
+                <td>
+                    @if (item.PaymentStatus)
+                    {
+                        <span class="badge bg-success">Paid</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Pending</span>
+                    }
+                </td>
+                @if (Model.ShowPayNow)
+                {
+                    <td>
+                        <form asp-controller="ResidentPayments"
+                              asp-action="PayNow"
+                              method="post"
+                              class="d-inline"
+                              onsubmit="return confirm('Pay ₹@item.Amount.ToString("N2") for @item.Month @item.Year?');">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <input type="hidden" name="returnUrl" value="@Model.Parent.ReturnUrl" />
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-credit-card me-1"></i> Pay Now
+                            </button>
+                        </form>
+                    </td>
+                }
+                @if (Model.Parent.ShowReceiptColumns && !Model.ShowPayNow)
+                {
+                    <td>@(item.ReceiptNumber ?? "-")</td>
+                    <td>@(item.PaidDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,111 @@
+@model ApartmentManagementSystem.Models.Maintenance
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Maintenance</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+
+        <form asp-action="Create">
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group">
+                <label asp-for="FlatNumber" class="control-label"></label>
+                <input asp-for="FlatNumber" class="form-control" />
+                <span asp-validation-for="FlatNumber" class="text-danger"></span>
+            </div>
+
+            <br />
+
+            <div class="form-group">
+                <label asp-for="Amount" class="control-label"></label>
+                <input asp-for="Amount" class="form-control" />
+                <span asp-validation-for="Amount" class="text-danger"></span>
+            </div>
+
+            <br />
+
+            <div class="form-group">
+                <label asp-for="Month" class="control-label"></label>
+                <input asp-for="Month" class="form-control" />
+                <span asp-validation-for="Month" class="text-danger"></span>
+            </div>
+
+            <br />
+
+            <div class="form-group">
+                <label asp-for="Year" class="control-label"></label>
+                <input asp-for="Year" class="form-control" />
+                <span asp-validation-for="Year" class="text-danger"></span>
+            </div>
+
+            <br />
+
+            <div class="form-group">
+                <label asp-for="DueDate" class="control-label"></label>
+                <input asp-for="DueDate" class="form-control" type="date" />
+                <span asp-validation-for="DueDate" class="text-danger"></span>
+            </div>
+
+            <br />
+
+            <!-- PAYMENT STATUS -->
+            <div class="form-group">
+                <label class="control-label">Payment Status</label>
+
+                <select asp-for="PaymentStatus" class="form-control">
+                    <option value="false">Pending</option>
+                    <option value="true">Paid</option>
+                </select>
+
+                <span asp-validation-for="PaymentStatus" class="text-danger"></span>
+            </div>
+
+            <br />
+
+            <!-- PAYMENT DATE -->
+            <div class="form-group">
+                <label asp-for="PaymentDate" class="control-label"></label>
+
+                <input asp-for="PaymentDate"
+                       class="form-control"
+                       type="date" />
+
+                <span asp-validation-for="PaymentDate" class="text-danger"></span>
+            </div>
+
+            <br />
+
+            <!-- REMARKS -->
+            <div class="form-group">
+                <label asp-for="Remarks" class="control-label"></label>
+
+                <textarea asp-for="Remarks"
+                          class="form-control"></textarea>
+
+                <span asp-validation-for="Remarks" class="text-danger"></span>
+            </div>
+
+            <br />
+
+            <div class="form-group">
+                <input type="submit"
+                       value="Create"
+                       class="btn btn-primary" />
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>

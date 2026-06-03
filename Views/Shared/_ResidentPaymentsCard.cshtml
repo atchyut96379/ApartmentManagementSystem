@@ -1,0 +1,63 @@
+@model ApartmentManagementSystem.Models.ResidentPaymentsViewModel
+
+@{
+    var pendingItems = Model.Payments.Where(p => !p.PaymentStatus).ToList();
+    var paidItems = Model.Payments.Where(p => p.PaymentStatus).ToList();
+}
+
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">
+            My Maintenance Payments
+            @if (!string.IsNullOrEmpty(Model.FlatNumber))
+            {
+                <small class="ms-2">(Flat @Model.FlatNumber)</small>
+            }
+        </h3>
+    </div>
+
+    <div class="card-body">
+        @if (!Model.HasResidentProfile)
+        {
+            <div class="alert alert-warning mb-0">
+                Your flat number is not set yet.
+                <a asp-controller="Account" asp-action="CompleteProfile" class="alert-link fw-bold">
+                    Click here to enter your flat number
+                </a>
+                so your maintenance dues can appear.
+            </div>
+        }
+        else if (Model.TotalAssignedCount == 0)
+        {
+            <div class="alert alert-warning mb-0">
+                No maintenance record found for flat <strong>@Model.FlatNumber</strong> yet.
+                Please refresh this page — ₹1,200 is assigned automatically each month for every flat.
+            </div>
+        }
+        else if (Model.PendingCount == 0)
+        {
+            <div class="alert alert-success">
+                No pending maintenance dues. All @Model.TotalAssignedCount record(s) are paid.
+            </div>
+
+            @if (paidItems.Any())
+            {
+                @await Html.PartialAsync("_ResidentPaymentTableBody", (paidItems, Model, false))
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">
+                You have <strong>@Model.PendingCount</strong> pending payment(s). Click <strong>Pay Now</strong> to complete payment.
+            </div>
+
+            @await Html.PartialAsync("_ResidentPaymentTableBody", (pendingItems, Model, true))
+
+            @if (!Model.PendingOnly && paidItems.Any())
+            {
+                <h5 class="mt-4 mb-2">Payment History</h5>
+                @await Html.PartialAsync("_ResidentPaymentTableBody", (paidItems, Model, false))
+            }
+        }
+    </div>
+</div>

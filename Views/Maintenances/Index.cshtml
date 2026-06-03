@@ -1,0 +1,70 @@
+@model IEnumerable<ApartmentManagementSystem.Models.Maintenance>
+
+@{
+    ViewData["Title"] = "Maintenance List";
+    var flatsWithout = ViewBag.FlatsWithoutMaintenance as List<string> ?? new List<string>();
+    var defaultAmount = ViewBag.DefaultAmount ?? 1200m;
+}
+
+<h1>Maintenance List</h1>
+
+<div class="alert alert-info">
+    <strong>Automatic billing:</strong> Every resident flat gets
+    <strong>₹@defaultAmount.ToString("N0")</strong> maintenance for the current month automatically.
+    You do not need to add records one by one. Use <strong>Add Maintenance</strong> only for special cases.
+</div>
+
+@if (flatsWithout.Any())
+{
+    <div class="alert alert-warning">
+        Missing maintenance for flat(s): @string.Join(", ", flatsWithout).
+        Refresh this page to auto-generate, or add a resident record first.
+    </div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-outline-primary">Add Special Maintenance (optional)</a>
+</p>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Flat Number</th>
+            <th>Amount</th>
+            <th>Month</th>
+            <th>Year</th>
+            <th>Status</th>
+            <th>Payment Date</th>
+            <th>Remarks</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.FlatNumber</td>
+                <td>₹@item.Amount.ToString("N2")</td>
+                <td>@item.Month</td>
+                <td>@item.Year</td>
+                <td>
+                    @if (item.PaymentStatus)
+                    {
+                        <span class="badge bg-success">Paid</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Pending</span>
+                    }
+                </td>
+                <td>@(item.PaymentDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                <td>@(string.IsNullOrWhiteSpace(item.Remarks) ? "-" : item.Remarks)</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

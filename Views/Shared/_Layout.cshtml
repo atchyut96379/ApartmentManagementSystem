@@ -1,0 +1,291 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>@ViewData["Title"] - ApartmentManagementSystem</title>
+
+    <!-- Google Font -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- AdminLTE -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+
+    <style>
+
+            body {
+                overflow-x: hidden;
+            }
+
+            .content-wrapper {
+                background-color: #f4f6f9;
+            }
+
+            .small-box h3 {
+                font-size: 2.2rem;
+                font-weight: bold;
+            }
+
+            .small-box p {
+                font-size: 1.2rem;
+            }
+
+    </style>
+
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+
+    <div class="wrapper">
+
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+
+            <ul class="navbar-nav">
+
+                <li class="nav-item">
+                    <a class="nav-link"
+                       data-widget="pushmenu"
+                       href="#"
+                       role="button">
+
+                        <i class="fas fa-bars"></i>
+
+                    </a>
+                </li>
+
+            </ul>
+
+        </nav>
+
+        <!-- Sidebar -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+
+            <!-- Brand Logo -->
+            <a href="/" class="brand-link text-center">
+
+                <span class="brand-text font-weight-light">
+                    Apartment Management
+                </span>
+
+            </a>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+
+                <!-- USER PANEL -->
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <div class="p-3 text-white">
+
+                        <p>
+                            Welcome
+                            <br />
+                            <strong>@User.Identity.Name</strong>
+                        </p>
+
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <span class="badge badge-success">
+                                Admin
+                            </span>
+                        }
+
+                        @if (User.IsInRole("Resident"))
+                        {
+                            <span class="badge badge-info">
+                                Resident
+                            </span>
+                        }
+
+                        <br />
+                        <br />
+
+                        <a asp-controller="Account"
+                           asp-action="Logout"
+                           class="btn btn-danger btn-sm">
+
+                            Logout
+
+                        </a>
+
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3">
+
+                        <a asp-controller="Account"
+                           asp-action="Login"
+                           class="btn btn-success btn-sm mb-2">
+
+                            Login
+
+                        </a>
+
+                        <br />
+
+                        <a asp-controller="Account"
+                           asp-action="Register"
+                           class="btn btn-primary btn-sm">
+
+                            Register
+
+                        </a>
+
+                    </div>
+                }
+
+                <hr class="bg-light" />
+
+                <!-- Sidebar Menu -->
+                <nav class="mt-2">
+
+                    <ul class="nav nav-pills nav-sidebar flex-column"
+                        data-widget="treeview"
+                        role="menu"
+                        data-accordion="false">
+
+                        <!-- DASHBOARD -->
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+
+                                <a href="/"
+                                   class="nav-link">
+
+                                    <i class="nav-icon fas fa-tachometer-alt"></i>
+
+                                    <p>Dashboard</p>
+
+                                </a>
+
+                            </li>
+                        }
+
+                        <!-- ADMIN MENUS -->
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <!-- Residents -->
+                            <li class="nav-item">
+
+                                <a href="/Residents"
+                                   class="nav-link">
+
+                                    <i class="nav-icon fas fa-users"></i>
+
+                                    <p>Residents</p>
+
+                                </a>
+
+                            </li>
+
+                            <!-- Maintenance -->
+                            <li class="nav-item">
+
+                                <a href="/Maintenances"
+                                   class="nav-link">
+
+                                    <i class="nav-icon fas fa-money-bill-wave"></i>
+
+                                    <p>Maintenance</p>
+
+                                </a>
+
+                            </li>
+
+                            <!-- Expenses -->
+                            <li class="nav-item">
+
+                                <a href="/Expenses"
+                                   class="nav-link">
+
+                                    <i class="nav-icon fas fa-wallet"></i>
+
+                                    <p>Expenses</p>
+
+                                </a>
+
+                            </li>
+
+                            <!-- Reports -->
+                            <li class="nav-item">
+
+                                <a href="/Reports"
+                                   class="nav-link">
+
+                                    <i class="nav-icon fas fa-chart-bar"></i>
+
+                                    <p>Reports</p>
+
+                                </a>
+
+                            </li>
+                        }
+
+                        <!-- RESIDENT MENU -->
+                        @if (User.IsInRole("Resident"))
+                        {
+                            <li class="nav-item">
+
+                                <a href="/ResidentPayments/MyPayments"
+                                   class="nav-link">
+
+                                    <i class="nav-icon fas fa-credit-card"></i>
+
+                                    <p>My Payments</p>
+
+                                </a>
+
+                            </li>
+                        }
+
+                    </ul>
+
+                </nav>
+
+            </div>
+
+        </aside>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+
+            <section class="content pt-3">
+
+                <div class="container-fluid">
+
+                    @RenderBody()
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+    <!-- Bootstrap -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+
+    <!-- AdminLTE -->
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+    <!-- Chart JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

@@ -1,0 +1,101 @@
+﻿@model ApartmentManagementSystem.Models.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="container-fluid">
+
+    <h2 class="mb-3">Financial Reports</h2>
+
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>₹@Model.MonthlyCollection.ToString("N2")</h3>
+                    <p>Total Collection</p>
+                </div>
+                <div class="icon"><i class="fas fa-money-bill"></i></div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>₹@Model.TotalExpenses.ToString("N2")</h3>
+                    <p>Total Expenses</p>
+                </div>
+                <div class="icon"><i class="fas fa-wallet"></i></div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>@Model.PendingPayments</h3>
+                    <p>Pending Payments</p>
+                </div>
+                <div class="icon"><i class="fas fa-clock"></i></div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+                <div class="inner">
+                    <h3>₹@Model.BalanceAmount.ToString("N2")</h3>
+                    <p>Balance</p>
+                </div>
+                <div class="icon"><i class="fas fa-credit-card"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-2">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total Residents:</strong> @Model.TotalResidents</p>
+                    <p><strong>Total Flats:</strong> @Model.TotalFlats</p>
+                    <p><strong>Maintenance Records:</strong> @Model.TotalMaintenanceRecords</p>
+                    <p class="mb-0"><strong>Pending Dues:</strong> @Model.PendingPayments</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.PendingMaintenanceList.Any())
+    {
+        <div class="card shadow mt-3">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">Pending Maintenance Details</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Flat</th>
+                            <th>Month</th>
+                            <th>Year</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.PendingMaintenanceList)
+                        {
+                            <tr>
+                                <td>@item.FlatNumber</td>
+                                <td>@item.Month</td>
+                                <td>@item.Year</td>
+                                <td>₹@item.Amount.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>
