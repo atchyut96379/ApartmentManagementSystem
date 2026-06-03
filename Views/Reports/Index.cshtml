@@ -12,10 +12,20 @@
         <div class="col-lg-3 col-6">
             <div class="small-box bg-success">
                 <div class="inner">
-                    <h3>₹@Model.MonthlyCollection.ToString("N2")</h3>
-                    <p>Total Collection</p>
+                    <h3>₹@Model.CurrentMonthCollection.ToString("N2")</h3>
+                    <p>This month collected</p>
                 </div>
                 <div class="icon"><i class="fas fa-money-bill"></i></div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-secondary">
+                <div class="inner">
+                    <h3>₹@Model.TotalCollected.ToString("N2")</h3>
+                    <p>Total collected (paid)</p>
+                </div>
+                <div class="icon"><i class="fas fa-coins"></i></div>
             </div>
         </div>
 
@@ -59,6 +69,8 @@
                 <div class="card-body">
                     <p><strong>Total Residents:</strong> @Model.TotalResidents</p>
                     <p><strong>Total Flats:</strong> @Model.TotalFlats</p>
+                    <p><strong>In-house Owners:</strong> @Model.TotalOwners</p>
+                    <p><strong>In-house Tenants:</strong> @Model.TotalTenants</p>
                     <p><strong>Maintenance Records:</strong> @Model.TotalMaintenanceRecords</p>
                     <p class="mb-0"><strong>Pending Dues:</strong> @Model.PendingPayments</p>
                 </div>

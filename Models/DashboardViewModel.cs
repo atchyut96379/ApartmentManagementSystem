@@ -8,7 +8,13 @@ namespace ApartmentManagementSystem.Models
 
         public int TotalOwners { get; set; }
 
-        public decimal MonthlyCollection { get; set; }
+        public int TotalTenants { get; set; }
+
+        /// <summary>Sum of all paid maintenance records (all time).</summary>
+        public decimal TotalCollected { get; set; }
+
+        /// <summary>Paid maintenance for the current calendar month.</summary>
+        public decimal CurrentMonthCollection { get; set; }
 
         public decimal TotalExpenses { get; set; }
 

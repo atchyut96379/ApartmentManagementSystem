@@ -1,0 +1,100 @@
+@model ApartmentManagementSystem.Models.ResidentImportResult
+
+@{
+    ViewData["Title"] = "Import Residents";
+}
+
+<h1>Import Residents from Excel</h1>
+
+<p>
+    Upload a <strong>.xlsx</strong> file from <strong>Residents &gt; Import from Excel</strong>.
+    The importer auto-detects the format from the first row.
+</p>
+
+<div class="card mb-3">
+    <div class="card-header">Supported formats</div>
+    <div class="card-body">
+        <h6>1. Standard template (sheet &quot;Residents&quot;)</h6>
+        <p class="mb-2">Columns: FlatNumber, ResidentName, Email, Phone, ResidentType (Owner/Tenant), PropertyOwnerName.</p>
+
+        <h6>2. Society export (7 columns, 2 header rows)</h6>
+        <p class="mb-2">
+            <strong>Row 1:</strong> S.No | Name | Flat No | Resident Type (merged over Owner+Tenant) | Owner Contact Number | Tenant Contact number<br />
+            <strong>Row 2:</strong> (empty under S.No, Name, Flat) | Owner | Tenant | (contact columns may be empty)<br />
+            <strong>Data from row 3:</strong> serial in S.No (ignored for import), name, flat, mark Owner <em>or</em> Tenant in the type columns
+            (<code>Owner</code>, <code>Tenant</code>, <code>X</code>, <code>Yes</code>, <code>1</code>, or a checkmark).
+            If type columns are blank, owner contact only implies Owner; tenant contact implies Tenant.
+            Multiple phones in one cell (separated by <code>/</code>) use the first number only. Email is left blank.
+            Tenants may have owner contact without an owner name.
+        </p>
+        <p class="mb-0 text-muted">
+            Combined flats (109+110, 209+210, etc.) are normalized automatically (e.g. flat 110 becomes 109-110).
+        </p>
+    </div>
+</div>
+
+<p>
+    <a asp-action="DownloadTemplate" class="btn btn-outline-secondary">
+        <i class="fas fa-download"></i> Download template (both sheets)
+    </a>
+    <a asp-action="Index" class="btn btn-link">Back to list</a>
+</p>
+
+@if (Model == null)
+{
+    <div class="card shadow">
+        <div class="card-body">
+            <form asp-action="Import" method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="All" class="text-danger"></div>
+                <div class="mb-3">
+                    <label for="file" class="form-label">Excel file (.xlsx)</label>
+                    <input type="file" name="file" id="file" class="form-control" accept=".xlsx" required />
+                </div>
+                <button type="submit" class="btn btn-primary">Import</button>
+            </form>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        Import complete: <strong>@Model.AddedCount</strong> added, <strong>@Model.SkippedCount</strong> skipped.
+    </div>
+
+    @if (Model.Rows.Any())
+    {
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Row</th>
+                    <th>Flat</th>
+                    <th>Status</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td>@row.RowNumber</td>
+                        <td>@row.FlatNumber</td>
+                        <td>
+                            @if (row.Status == "Added")
+                            {
+                                <span class="badge bg-success">@row.Status</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">@row.Status</span>
+                            }
+                        </td>
+                        <td>@row.Message</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <a asp-action="Import" class="btn btn-primary">Import another file</a>
+    <a asp-action="Index" class="btn btn-link">Back to list</a>
+}

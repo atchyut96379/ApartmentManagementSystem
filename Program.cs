@@ -1,4 +1,5 @@
 using ApartmentManagementSystem.Data;
+using ApartmentManagementSystem.Filters;
 using ApartmentManagementSystem.Identity;
 using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Identity;
@@ -7,10 +8,15 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<MustChangePasswordFilter>();
+});
 builder.Services.AddScoped<ResidentProfileService>();
 builder.Services.AddScoped<DashboardStatsService>();
 builder.Services.AddScoped<MaintenanceBillingService>();
+builder.Services.AddScoped<ResidentImportService>();
+builder.Services.AddScoped<ResidentAccountService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
@@ -73,11 +79,13 @@ using (var scope = app.Services.CreateScope())
 
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var residentProfileService = services.GetRequiredService<ResidentProfileService>();
-    var residentUsers = await userManager.GetUsersInRoleAsync("Resident");
-
-    foreach (var residentUser in residentUsers)
+    foreach (var role in new[] { "Resident", "Admin" })
     {
-        await residentProfileService.EnsureResidentProfileAsync(residentUser);
+        var usersInRole = await userManager.GetUsersInRoleAsync(role);
+        foreach (var user in usersInRole)
+        {
+            await residentProfileService.EnsureResidentProfileAsync(user);
+        }
     }
 
     var billingService = services.GetRequiredService<MaintenanceBillingService>();

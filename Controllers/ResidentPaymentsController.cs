@@ -1,31 +1,42 @@
 using ApartmentManagementSystem.Data;
+using ApartmentManagementSystem.Identity;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Resident")]
+    [Authorize(Roles = "Resident,Admin")]
     public class ResidentPaymentsController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly ResidentProfileService _residentProfileService;
         private readonly MaintenanceBillingService _billingService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public ResidentPaymentsController(
             ApplicationDbContext context,
             ResidentProfileService residentProfileService,
-            MaintenanceBillingService billingService)
+            MaintenanceBillingService billingService,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _residentProfileService = residentProfileService;
             _billingService = billingService;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> MyPayments()
         {
+            var redirect = await GetAccessRedirectAsync();
+            if (redirect != null)
+            {
+                return redirect;
+            }
+
             return View(await BuildPaymentsViewModelAsync(
                 pendingOnly: false,
                 showReceiptColumns: true,
@@ -36,6 +47,12 @@ namespace ApartmentManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PayNow(int id, string? returnUrl)
         {
+            var redirect = await GetAccessRedirectAsync();
+            if (redirect != null)
+            {
+                return redirect;
+            }
+
             await _billingService.EnsureMonthlyMaintenanceForAllResidentsAsync();
 
             var flat = await _residentProfileService.GetFlatForUserAsync(User);
@@ -67,7 +84,9 @@ namespace ApartmentManagementSystem.Controllers
             maintenance.PaymentDate = DateTime.Now;
             maintenance.PaidDate = DateTime.Now;
             maintenance.ReceiptNumber = "RCPT-" + DateTime.Now.Ticks;
-            maintenance.Remarks = "Paid online by resident";
+            maintenance.Remarks = User.IsInRole("Admin")
+                ? "Paid online by admin"
+                : "Paid online by resident";
 
             _context.Update(maintenance);
             await _context.SaveChangesAsync();
@@ -76,6 +95,29 @@ namespace ApartmentManagementSystem.Controllers
                 $"Payment of ₹{maintenance.Amount:N2} for {maintenance.Month} {maintenance.Year} completed successfully.";
 
             return RedirectToLocal(returnUrl, "/ResidentPayments/MyPayments");
+        }
+
+        private async Task<IActionResult?> GetAccessRedirectAsync()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user?.MustChangePassword == true)
+            {
+                return RedirectToAction("ChangePasswordRequired", "Account");
+            }
+
+            var flat = await _residentProfileService.GetFlatForUserAsync(User);
+            if (string.IsNullOrEmpty(flat))
+            {
+                if (User.IsInRole("Admin"))
+                {
+                    TempData["Error"] = "Your admin account has no flat linked. You cannot use My Payments until a flat is set.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                return RedirectToAction("CompleteProfile", "Account");
+            }
+
+            return null;
         }
 
         private async Task<ResidentPaymentsViewModel> BuildPaymentsViewModelAsync(

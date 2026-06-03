@@ -7,5 +7,7 @@ namespace ApartmentManagementSystem.Identity
         public string FullName { get; set; }
 
         public string? FlatNumber { get; set; }
+
+        public bool MustChangePassword { get; set; }
     }
 }

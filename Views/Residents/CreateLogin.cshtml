@@ -1,0 +1,42 @@
+@model ApartmentManagementSystem.Models.CreateResidentLoginViewModel
+
+@{
+    ViewData["Title"] = "Create resident login";
+}
+
+<h1>Create resident login</h1>
+
+<p class="text-muted">
+    Flat <strong>@Model.FlatNumber</strong> — @Model.ResidentName
+</p>
+
+<div class="card shadow col-md-6">
+    <div class="card-body">
+        <form asp-action="CreateLogin" method="post">
+            <input type="hidden" asp-for="ResidentId" />
+            <input type="hidden" asp-for="ResidentName" />
+            <input type="hidden" asp-for="FlatNumber" />
+
+            <div asp-validation-summary="All" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+                <div class="form-text">This email is the username for login.</div>
+            </div>
+
+            <p class="alert alert-info mb-3">
+                A temporary password will be generated. You will see it once on the next screen to share with the resident.
+                They must change it on first login.
+            </p>
+
+            <button type="submit" class="btn btn-primary">Create login</button>
+            <a asp-action="Index" class="btn btn-link">Cancel</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

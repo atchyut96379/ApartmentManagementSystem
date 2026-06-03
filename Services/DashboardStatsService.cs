@@ -15,6 +15,13 @@ namespace ApartmentManagementSystem.Services
 
         public DashboardViewModel GetSocietyStats()
         {
+            var currentMonth = DateTime.Now.ToString("MMMM");
+            var currentYear = DateTime.Now.Year;
+
+            var totalCollected = _context.Maintenances
+                .Where(m => m.PaymentStatus)
+                .Sum(m => (decimal?)m.Amount) ?? 0;
+
             var model = new DashboardViewModel
             {
                 TotalResidents = _context.Residents.Count(),
@@ -23,8 +30,13 @@ namespace ApartmentManagementSystem.Services
                     .Distinct()
                     .Count(),
                 TotalOwners = _context.Residents.Count(r => r.IsOwner),
-                MonthlyCollection = _context.Maintenances
-                    .Where(m => m.PaymentStatus)
+                TotalTenants = _context.Residents.Count(r => !r.IsOwner),
+                TotalCollected = totalCollected,
+                CurrentMonthCollection = _context.Maintenances
+                    .Where(m =>
+                        m.PaymentStatus &&
+                        m.Year == currentYear &&
+                        m.Month == currentMonth)
                     .Sum(m => (decimal?)m.Amount) ?? 0,
                 TotalExpenses = _context.Expenses
                     .Sum(e => (decimal?)e.Amount) ?? 0,
@@ -33,7 +45,7 @@ namespace ApartmentManagementSystem.Services
                 TotalMaintenanceRecords = _context.Maintenances.Count()
             };
 
-            model.BalanceAmount = model.MonthlyCollection - model.TotalExpenses;
+            model.BalanceAmount = model.TotalCollected - model.TotalExpenses;
             return model;
         }
 

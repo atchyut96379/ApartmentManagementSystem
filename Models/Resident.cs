@@ -20,6 +20,12 @@ namespace ApartmentManagementSystem.Models
 
         public bool IsOwner { get; set; }
 
+        /// <summary>Landlord name when the resident is a tenant (IsOwner=false).</summary>
+        public string? PropertyOwnerName { get; set; }
+
+        /// <summary>Landlord contact when tenant has no owner name in import data.</summary>
+        public string? OwnerContactNumber { get; set; }
+
         public DateTime CreatedDate { get; set; } = DateTime.Now;
     }
 }

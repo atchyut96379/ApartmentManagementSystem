@@ -24,10 +24,6 @@ namespace ApartmentManagementSystem.Controllers
             _billingService = billingService;
         }
 
-        // =========================
-        // ADMIN - MAINTENANCE LIST
-        // =========================
-
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
@@ -48,10 +44,6 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction("MyPayments", "ResidentPayments");
         }
 
-        // =========================
-        // DETAILS
-        // =========================
-
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Details(int? id)
         {
@@ -71,172 +63,47 @@ namespace ApartmentManagementSystem.Controllers
             return View(maintenance);
         }
 
-        // =========================
-        // CREATE GET
-        // =========================
-
-        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
-            return View(new Maintenance
-            {
-                PaymentStatus = false,
-                DueDate = DateTime.Today,
-                Year = DateTime.Today.Year,
-                Remarks = string.Empty
-            });
+            return ForbidAdminMaintenanceMutation();
         }
-
-        // =========================
-        // CREATE POST
-        // =========================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create(
+        public IActionResult Create(
             [Bind("Id,FlatNumber,Amount,Month,Year,DueDate,PaymentStatus,PaymentDate,Remarks")]
             Maintenance maintenance)
         {
-            if (ModelState.IsValid)
-            {
-                maintenance.FlatNumber = maintenance.FlatNumber.Trim();
-
-                if (!maintenance.PaymentStatus)
-                {
-                    maintenance.PaymentDate = null;
-                    maintenance.PaidDate = null;
-                    maintenance.ReceiptNumber = null;
-                }
-
-                _context.Add(maintenance);
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(maintenance);
+            return ForbidAdminMaintenanceMutation();
         }
 
-        // =========================
-        // EDIT GET
-        // =========================
-
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Edit(int? id)
+        public IActionResult Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var maintenance =
-                await _context.Maintenances.FindAsync(id);
-
-            if (maintenance == null)
-            {
-                return NotFound();
-            }
-
-            return View(maintenance);
+            return ForbidAdminMaintenanceMutation();
         }
-
-        // =========================
-        // EDIT POST
-        // =========================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Edit(
+        public IActionResult Edit(
             int? id,
             [Bind("Id,FlatNumber,Amount,Month,Year,DueDate,PaymentStatus,PaymentDate,Remarks")]
             Maintenance maintenance)
         {
-            if (id != maintenance.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(maintenance);
-
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!MaintenanceExists(maintenance.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(maintenance);
+            return ForbidAdminMaintenanceMutation();
         }
 
-        // =========================
-        // DELETE GET
-        // =========================
-
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Delete(int? id)
+        public IActionResult Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var maintenance = await _context.Maintenances
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (maintenance == null)
-            {
-                return NotFound();
-            }
-
-            return View(maintenance);
+            return ForbidAdminMaintenanceMutation();
         }
-
-        // =========================
-        // DELETE POST
-        // =========================
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteConfirmed(int? id)
+        public IActionResult DeleteConfirmed(int? id)
         {
-            var maintenance =
-                await _context.Maintenances.FindAsync(id);
-
-            if (maintenance != null)
-            {
-                _context.Maintenances.Remove(maintenance);
-            }
-
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Index));
+            return ForbidAdminMaintenanceMutation();
         }
 
-        // =========================
-        // EXISTS
-        // =========================
-
-        private bool MaintenanceExists(int? id)
-        {
-            return _context.Maintenances.Any(e => e.Id == id);
-        }
-
+        private IActionResult ForbidAdminMaintenanceMutation() => Forbid();
     }
 }

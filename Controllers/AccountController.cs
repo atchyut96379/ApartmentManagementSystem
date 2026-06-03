@@ -39,13 +39,15 @@ namespace ApartmentManagementSystem.Controllers
         // =========================================
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult Register()
         {
-            return View(new RegisterViewModel());
+            return View(new RegisterViewModel { Role = "Admin" });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
             var email = model.Email?.Trim() ?? string.Empty;
@@ -68,15 +70,7 @@ namespace ApartmentManagementSystem.Controllers
                     ModelState.AddModelError(nameof(RegisterViewModel.Password), "Password is required");
                 }
 
-                if (string.IsNullOrWhiteSpace(model.Role))
-                {
-                    ModelState.AddModelError(nameof(RegisterViewModel.Role), "Please select role");
-                }
-
-                if (model.Role == "Resident" && string.IsNullOrWhiteSpace(model.FlatNumber))
-                {
-                    ModelState.AddModelError(nameof(RegisterViewModel.FlatNumber), "Flat number is required for residents");
-                }
+                model.Role = "Admin";
 
                 if (!ModelState.IsValid)
                 {
@@ -95,33 +89,13 @@ namespace ApartmentManagementSystem.Controllers
                     return View(model);
                 }
 
-                Resident? existingResident = null;
-
-                if (model.Role == "Resident")
-                {
-                    existingResident = await _context.Residents
-                        .FirstOrDefaultAsync(r =>
-                            r.Email != null &&
-                            r.Email.Trim().ToLower() == email.ToLower());
-
-                    if (existingResident != null &&
-                        !string.IsNullOrEmpty(existingResident.UserId))
-                    {
-                        ModelState.AddModelError(
-                            "",
-                            "This email is already linked to another account. Please log in or contact the admin.");
-                        model.ShowLoginLink = true;
-                        model.Password = string.Empty;
-                        return View(model);
-                    }
-                }
-
                 var user = new ApplicationUser
                 {
                     FullName = model.FullName.Trim(),
                     UserName = email,
                     Email = email,
-                    FlatNumber = model.Role == "Resident" ? model.FlatNumber : null
+                    FlatNumber = null,
+                    MustChangePassword = false
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
@@ -147,43 +121,9 @@ namespace ApartmentManagementSystem.Controllers
                     await _roleManager.CreateAsync(new IdentityRole("Resident"));
                 }
 
-                await _userManager.AddToRoleAsync(user, model.Role);
+                await _userManager.AddToRoleAsync(user, "Admin");
 
-                if (model.Role == "Resident")
-                {
-                    if (existingResident != null)
-                    {
-                        existingResident.UserId = user.Id;
-                        existingResident.OwnerName = model.FullName.Trim();
-                        existingResident.Email = email;
-                        existingResident.FlatNumber = model.FlatNumber!;
-                        if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
-                        {
-                            existingResident.PhoneNumber = model.PhoneNumber.Trim();
-                        }
-
-                        user.FlatNumber = existingResident.FlatNumber;
-                        await _userManager.UpdateAsync(user);
-                    }
-                    else
-                    {
-                        _context.Residents.Add(new Resident
-                        {
-                            FlatNumber = model.FlatNumber!,
-                            OwnerName = model.FullName.Trim(),
-                            PhoneNumber = model.PhoneNumber?.Trim() ?? string.Empty,
-                            Email = email,
-                            UserId = user.Id,
-                            IsOwner = true,
-                            CreatedDate = DateTime.Now
-                        });
-                    }
-
-                    await _context.SaveChangesAsync();
-                    await _billingService.EnsureMonthlyMaintenanceForAllResidentsAsync();
-                }
-
-                TempData["Success"] = "Registration successful. Please login.";
+                TempData["Success"] = "Admin account created. Please login.";
                 return RedirectToAction("Login", new { email });
             }
             catch (Exception ex)
@@ -205,13 +145,18 @@ namespace ApartmentManagementSystem.Controllers
         // =========================================
 
         [HttpGet]
-        [Authorize(Roles = "Resident")]
+        [Authorize(Roles = "Resident,Admin")]
         public async Task<IActionResult> CompleteProfile()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return RedirectToAction("Login");
+            }
+
+            if (user.MustChangePassword)
+            {
+                return RedirectToAction("ChangePasswordRequired");
             }
 
             var flat = await _residentProfileService.GetFlatForUserAsync(User);
@@ -228,13 +173,18 @@ namespace ApartmentManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Resident")]
+        [Authorize(Roles = "Resident,Admin")]
         public async Task<IActionResult> CompleteProfile(CompleteProfileViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return RedirectToAction("Login");
+            }
+
+            if (user.MustChangePassword)
+            {
+                return RedirectToAction("ChangePasswordRequired");
             }
 
             if (string.IsNullOrWhiteSpace(model.FlatNumber))
@@ -314,16 +264,27 @@ namespace ApartmentManagementSystem.Controllers
                 {
                     var user = await _userManager.FindByEmailAsync(email);
 
-                    if (user != null &&
-                        await _userManager.IsInRoleAsync(user, "Resident"))
+                    if (user != null)
                     {
-                        await _residentProfileService.EnsureResidentProfileAsync(user);
-
-                        user = await _userManager.FindByIdAsync(user.Id);
-
-                        if (user != null && string.IsNullOrWhiteSpace(user.FlatNumber))
+                        if (await _userManager.IsInRoleAsync(user, "Resident") ||
+                            await _userManager.IsInRoleAsync(user, "Admin"))
                         {
-                            return RedirectToAction("CompleteProfile");
+                            await _residentProfileService.EnsureResidentProfileAsync(user);
+                        }
+
+                        if (user.MustChangePassword)
+                        {
+                            return RedirectToAction("ChangePasswordRequired");
+                        }
+
+                        if (await _userManager.IsInRoleAsync(user, "Resident"))
+                        {
+                            user = await _userManager.FindByIdAsync(user.Id);
+
+                            if (user != null && string.IsNullOrWhiteSpace(user.FlatNumber))
+                            {
+                                return RedirectToAction("CompleteProfile");
+                            }
                         }
                     }
 
@@ -362,6 +323,51 @@ namespace ApartmentManagementSystem.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePasswordRequired()
+        {
+            return View(new ChangePasswordRequiredViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public async Task<IActionResult> ChangePasswordRequired(ChangePasswordRequiredViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Login");
+            }
+
+            var changeResult = await _userManager.ChangePasswordAsync(
+                user,
+                model.CurrentPassword,
+                model.NewPassword);
+
+            if (!changeResult.Succeeded)
+            {
+                foreach (var error in changeResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return View(model);
+            }
+
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+
+            TempData["Success"] = "Your password has been updated.";
+            return RedirectToAction("Index", "Home");
         }
     }
 }

@@ -133,13 +133,9 @@
 
                         <br />
 
-                        <a asp-controller="Account"
-                           asp-action="Register"
-                           class="btn btn-primary btn-sm">
-
-                            Register
-
-                        </a>
+                        <p class="text-white-50 small mb-0 mt-2">
+                            Resident access is provided by the admin.
+                        </p>
 
                     </div>
                 }
@@ -231,22 +227,7 @@
                             </li>
                         }
 
-                        <!-- RESIDENT MENU -->
-                        @if (User.IsInRole("Resident"))
-                        {
-                            <li class="nav-item">
-
-                                <a href="/ResidentPayments/MyPayments"
-                                   class="nav-link">
-
-                                    <i class="nav-icon fas fa-credit-card"></i>
-
-                                    <p>My Payments</p>
-
-                                </a>
-
-                            </li>
-                        }
+                        @await Component.InvokeAsync("ShowMyPaymentsNav")
 
                     </ul>
 
