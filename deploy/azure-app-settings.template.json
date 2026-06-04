@@ -1,6 +1,7 @@
 {
   "_comment": "Copy each key into Azure Portal → App Service → Configuration → Application settings. Do not commit real secrets.",
   "ASPNETCORE_ENVIRONMENT": "Production",
+  "_comment_DATABASE_MIGRATE_ON_STARTUP": "Omit or true = auto-migrate on startup. Set false only if you apply SQL scripts manually.",
   "DATABASE_MIGRATE_ON_STARTUP": "true",
   "ConnectionStrings__DefaultConnection": "Server=tcp:YOUR-SQL.database.windows.net,1433;Database=ApartmentManagementDB;User ID=sqladmin;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;",
   "Application__AppUrl": "https://YOURAPP.azurewebsites.net",

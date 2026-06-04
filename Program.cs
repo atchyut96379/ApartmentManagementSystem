@@ -132,16 +132,25 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
-    var runMigrations = app.Environment.IsDevelopment() ||
-        string.Equals(
-            Environment.GetEnvironmentVariable("DATABASE_MIGRATE_ON_STARTUP"),
-            "true",
-            StringComparison.OrdinalIgnoreCase);
+    var skipMigrations = string.Equals(
+        Environment.GetEnvironmentVariable("DATABASE_MIGRATE_ON_STARTUP"),
+        "false",
+        StringComparison.OrdinalIgnoreCase);
 
-    if (runMigrations)
+    if (!skipMigrations)
     {
         var db = services.GetRequiredService<ApplicationDbContext>();
-        await db.Database.MigrateAsync();
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Database");
+        try
+        {
+            await db.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Database migration failed.");
+            throw;
+        }
     }
 
     var identitySeed = services.GetRequiredService<IdentitySeedService>();

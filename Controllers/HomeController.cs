@@ -3,8 +3,11 @@ using ApartmentManagementSystem.Identity;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace ApartmentManagementSystem.Controllers
@@ -17,6 +20,8 @@ namespace ApartmentManagementSystem.Controllers
         private readonly DashboardReportExportService _reportExportService;
         private readonly SocietySettings _society;
         private readonly ApplicationSettings _app;
+        private readonly ILogger<HomeController> _logger;
+        private readonly IWebHostEnvironment _environment;
 
         public HomeController(
             ResidentProfileService residentProfileService,
@@ -24,7 +29,9 @@ namespace ApartmentManagementSystem.Controllers
             UserManager<ApplicationUser> userManager,
             DashboardReportExportService reportExportService,
             IOptions<SocietySettings> society,
-            IOptions<ApplicationSettings> app)
+            IOptions<ApplicationSettings> app,
+            ILogger<HomeController> logger,
+            IWebHostEnvironment environment)
         {
             _residentProfileService = residentProfileService;
             _dashboardStatsService = dashboardStatsService;
@@ -32,6 +39,8 @@ namespace ApartmentManagementSystem.Controllers
             _reportExportService = reportExportService;
             _society = society.Value;
             _app = app.Value;
+            _logger = logger;
+            _environment = environment;
         }
 
         [Authorize]
@@ -135,10 +144,51 @@ namespace ApartmentManagementSystem.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel
+            var exceptionFeature = HttpContext.Features.Get<IExceptionHandlerPathFeature>();
+            var error = exceptionFeature?.Error;
+
+            if (error != null)
             {
-                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
-            });
+                _logger.LogError(
+                    error,
+                    "Unhandled error. Path={Path}",
+                    exceptionFeature?.Path);
+            }
+
+            var model = new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+                UserMessage = BuildErrorUserMessage(error)
+            };
+
+            return View(model);
+        }
+
+        private string? BuildErrorUserMessage(Exception? error)
+        {
+            if (error == null)
+            {
+                return null;
+            }
+
+            var root = error;
+            while (root.InnerException != null)
+            {
+                root = root.InnerException;
+            }
+
+            if (root is SqlException or DbUpdateException)
+            {
+                return "Database schema is out of date. Restart the app after deploy (migrations run automatically). "
+                    + "If this continues, set DATABASE_MIGRATE_ON_STARTUP=true in Azure and restart once.";
+            }
+
+            if (_environment.IsDevelopment() || User.IsInRole("Admin"))
+            {
+                return root.Message;
+            }
+
+            return "Something went wrong. Try again or contact the system administrator.";
         }
 
         private PublicSiteViewModel BuildPublicSiteModel()
