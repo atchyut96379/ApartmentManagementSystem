@@ -32,9 +32,11 @@ namespace ApartmentManagementSystem.Services
                 SmsProvider = notification.SmsProvider,
                 SmsStatus = smsSimulation
                     ? "Simulation — reminders log only (no real SMS). Add MSG91 keys for live SMS."
-                    : smsReady
-                        ? $"{notification.SmsProvider} configured"
-                        : "Enable SMS, add MSG91 Auth Key + Sender ID, Save (or Azure app settings).",
+                    : notification.IsMsg91FlowConfigured
+                        ? $"{notification.SmsProvider} + DLT Flow ID configured"
+                        : smsReady
+                            ? $"{notification.SmsProvider} configured — add Flow ID for India delivery"
+                            : "Enable SMS, add MSG91 Auth Key + Sender ID, Save (or Azure app settings).",
                 PaymentProvider = payment.Provider,
                 RazorpayReady = razorpayReady,
                 RazorpayStatus = razorpayReady

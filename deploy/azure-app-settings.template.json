@@ -23,5 +23,6 @@
   "Notification__EnableSms": "true",
   "Notification__SmsProvider": "Msg91",
   "Notification__Msg91AuthKey": "YOUR_MSG91_AUTH_KEY",
-  "Notification__Msg91SenderId": "YOUR6C"
+  "Notification__Msg91SenderId": "YOUR6C",
+  "Notification__Msg91FlowId": "YOUR_MSG91_FLOW_TEMPLATE_ID"
 }

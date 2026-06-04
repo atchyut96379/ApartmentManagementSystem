@@ -222,11 +222,7 @@ namespace ApartmentManagementSystem.Services
             return $"{shortName} association";
         }
 
-        private static string BuildReminderSmsMessage(
-            string residentName,
-            string month,
-            string payUrl,
-            string associationName)
+        private static string GetFirstName(string residentName)
         {
             var firstName = residentName.Trim();
             var space = firstName.IndexOf(' ');
@@ -234,6 +230,45 @@ namespace ApartmentManagementSystem.Services
             {
                 firstName = firstName[..space];
             }
+
+            return firstName;
+        }
+
+        private static string ExtractMonthFromReminderBody(string smsBody)
+        {
+            const string marker = "Still ";
+            var start = smsBody.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (start < 0)
+            {
+                return "this month";
+            }
+
+            start += marker.Length;
+            var end = smsBody.IndexOf(" maintenance", start, StringComparison.OrdinalIgnoreCase);
+            return end > start ? smsBody[start..end].Trim() : "this month";
+        }
+
+        private static string ExtractPayUrlFromReminderBody(string smsBody)
+        {
+            const string marker = "Pay: ";
+            var start = smsBody.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (start < 0)
+            {
+                return string.Empty;
+            }
+
+            start += marker.Length;
+            var end = smsBody.IndexOf('\n', start);
+            return end > start ? smsBody[start..end].Trim() : smsBody[start..].Trim();
+        }
+
+        private static string BuildReminderSmsMessage(
+            string residentName,
+            string month,
+            string payUrl,
+            string associationName)
+        {
+            var firstName = GetFirstName(residentName);
 
             return
                 $"Hi {firstName},\n" +
@@ -255,7 +290,17 @@ namespace ApartmentManagementSystem.Services
                 return false;
             }
 
-            var (ok, err) = await _smsSender.SendAsync(resident.PhoneNumber.Trim(), smsBody);
+            var flowVars = new Dictionary<string, string>
+            {
+                ["name"] = GetFirstName(resident.OwnerName),
+                ["month"] = ExtractMonthFromReminderBody(smsBody),
+                ["link"] = ExtractPayUrlFromReminderBody(smsBody)
+            };
+
+            var (ok, err) = await _smsSender.SendAsync(
+                resident.PhoneNumber.Trim(),
+                smsBody,
+                flowVars);
             if (ok)
             {
                 result.SmsSent++;

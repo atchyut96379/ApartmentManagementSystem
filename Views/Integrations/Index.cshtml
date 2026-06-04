@@ -112,6 +112,13 @@
                     <label asp-for="Msg91SenderId" class="form-label">MSG91 Sender ID (6 chars)</label>
                     <input asp-for="Msg91SenderId" class="form-control" />
                 </div>
+                <div class="mb-2">
+                    <label asp-for="Msg91FlowId" class="form-label">MSG91 Flow / Template ID (DLT)</label>
+                    <input asp-for="Msg91FlowId" class="form-control" placeholder="From SMS → Templates → copy Template ID" />
+                    <div class="form-text small">
+                        India: create template with variables ##name##, ##month##, ##link## (DLT approved), then paste Flow ID here or Azure <code>Notification__Msg91FlowId</code>.
+                    </div>
+                </div>
                 <hr />
                 <div class="mb-2">
                     <label asp-for="TwilioAccountSid" class="form-label">Twilio Account SID</label>

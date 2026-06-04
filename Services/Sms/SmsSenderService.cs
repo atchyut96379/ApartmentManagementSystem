@@ -1,6 +1,6 @@
-using System.Text;
-using System.Text.Json;
 using ApartmentManagementSystem.Models;
+using Microsoft.Extensions.Logging;
+
 namespace ApartmentManagementSystem.Services.Sms
 {
     public class SmsSenderService
@@ -19,7 +19,13 @@ namespace ApartmentManagementSystem.Services.Sms
             _logger = logger;
         }
 
-        public async Task<(bool Success, string? Error)> SendAsync(string phone, string body)
+        public Task<(bool Success, string? Error)> SendAsync(string phone, string body) =>
+            SendAsync(phone, body, flowVariables: null);
+
+        public async Task<(bool Success, string? Error)> SendAsync(
+            string phone,
+            string body,
+            IReadOnlyDictionary<string, string>? flowVariables)
         {
             var settings = _settingsStore.GetNotificationSettings();
             if (!settings.IsSmsConfigured)
@@ -40,7 +46,14 @@ namespace ApartmentManagementSystem.Services.Sms
 
             if (settings.SmsProvider.Equals("Msg91", StringComparison.OrdinalIgnoreCase))
             {
-                return await SendMsg91Async(settings, phone, body);
+                var client = _httpClientFactory.CreateClient();
+                return await Msg91SmsClient.SendAsync(
+                    client,
+                    settings,
+                    phone,
+                    body,
+                    flowVariables,
+                    _logger);
             }
 
             return await SendTwilioAsync(settings, phone, body);
@@ -55,7 +68,7 @@ namespace ApartmentManagementSystem.Services.Sms
             {
                 var client = _httpClientFactory.CreateClient();
                 var credentials = Convert.ToBase64String(
-                    Encoding.UTF8.GetBytes(
+                    System.Text.Encoding.UTF8.GetBytes(
                         $"{settings.TwilioAccountSid}:{settings.TwilioAuthToken}"));
 
                 client.DefaultRequestHeaders.Authorization =
@@ -88,44 +101,6 @@ namespace ApartmentManagementSystem.Services.Sms
             }
         }
 
-        private async Task<(bool Success, string? Error)> SendMsg91Async(
-            NotificationSettings settings,
-            string phone,
-            string body)
-        {
-            try
-            {
-                var mobile = NormalizePhoneForMsg91(phone);
-                var encodedMessage = Uri.EscapeDataString(body);
-                var url =
-                    $"https://api.msg91.com/api/v2/sendsms?authkey={Uri.EscapeDataString(settings.Msg91AuthKey)}" +
-                    $"&mobiles={mobile}&message={encodedMessage}" +
-                    $"&sender={Uri.EscapeDataString(settings.Msg91SenderId)}&route=4&country=91";
-
-                var client = _httpClientFactory.CreateClient();
-                var response = await client.GetAsync(url);
-                var responseText = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return (false, responseText);
-                }
-
-                if (responseText.Contains("error", StringComparison.OrdinalIgnoreCase) &&
-                    !responseText.Contains("success", StringComparison.OrdinalIgnoreCase))
-                {
-                    return (false, responseText);
-                }
-
-                _logger.LogInformation("MSG91 SMS sent to {Phone}", phone);
-                return (true, null);
-            }
-            catch (Exception ex)
-            {
-                return (false, ex.Message);
-            }
-        }
-
         private static string NormalizePhone(string phone)
         {
             var digits = new string(phone.Where(char.IsDigit).ToArray());
@@ -135,22 +110,6 @@ namespace ApartmentManagementSystem.Services.Sms
             }
 
             return phone.StartsWith('+') ? phone : "+" + digits;
-        }
-
-        private static string NormalizePhoneForMsg91(string phone)
-        {
-            var digits = new string(phone.Where(char.IsDigit).ToArray());
-            if (digits.Length == 10)
-            {
-                return "91" + digits;
-            }
-
-            if (digits.StartsWith("91") && digits.Length == 12)
-            {
-                return digits;
-            }
-
-            return digits;
         }
     }
 }

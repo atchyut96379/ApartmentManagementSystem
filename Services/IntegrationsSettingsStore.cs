@@ -100,6 +100,7 @@ namespace ApartmentManagementSystem.Services
                 TwilioFromNumber = notification.TwilioFromNumber,
                 Msg91AuthKey = MaskIfOnFile(local?.Notification?.Msg91AuthKey),
                 Msg91SenderId = notification.Msg91SenderId,
+                Msg91FlowId = notification.Msg91FlowId,
                 PaymentProvider = payment.Provider,
                 RazorpayKeyId = payment.Razorpay.KeyId,
                 AppUrl = string.IsNullOrWhiteSpace(app.AppUrl)
@@ -132,6 +133,7 @@ namespace ApartmentManagementSystem.Services
             existing.Notification.TwilioAccountSid = model.TwilioAccountSid?.Trim() ?? string.Empty;
             existing.Notification.TwilioFromNumber = model.TwilioFromNumber?.Trim() ?? string.Empty;
             existing.Notification.Msg91SenderId = model.Msg91SenderId?.Trim() ?? string.Empty;
+            existing.Notification.Msg91FlowId = model.Msg91FlowId?.Trim() ?? string.Empty;
 
             if (!string.IsNullOrWhiteSpace(model.SmtpPassword))
             {
@@ -225,6 +227,7 @@ namespace ApartmentManagementSystem.Services
             OverlayIfSet(local.TwilioFromNumber, v => target.TwilioFromNumber = v);
             OverlayIfSet(local.Msg91AuthKey, v => target.Msg91AuthKey = v);
             OverlayIfSet(local.Msg91SenderId, v => target.Msg91SenderId = v);
+            OverlayIfSet(local.Msg91FlowId, v => target.Msg91FlowId = v);
         }
 
         private static void OverlayIfSet(string? value, Action<string> apply)

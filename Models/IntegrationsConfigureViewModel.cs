@@ -43,6 +43,9 @@ namespace ApartmentManagementSystem.Models
 
         public string? Msg91SenderId { get; set; }
 
+        [Display(Name = "MSG91 Flow / Template ID (India DLT)")]
+        public string? Msg91FlowId { get; set; }
+
         public string PaymentProvider { get; set; } = "Simulation";
 
         public string? RazorpayKeyId { get; set; }

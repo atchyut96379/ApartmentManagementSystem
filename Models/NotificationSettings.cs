@@ -41,6 +41,9 @@ namespace ApartmentManagementSystem.Models
 
         public string Msg91SenderId { get; set; } = string.Empty;
 
+        /// <summary>MSG91 Flow / Template ID (India DLT). Required for delivery on most Indian accounts.</summary>
+        public string Msg91FlowId { get; set; } = string.Empty;
+
         public bool IsEmailConfigured =>
             EnableEmail &&
             !string.IsNullOrWhiteSpace(SmtpHost) &&
@@ -54,6 +57,9 @@ namespace ApartmentManagementSystem.Models
             !string.IsNullOrWhiteSpace(TwilioAccountSid) &&
             !string.IsNullOrWhiteSpace(TwilioAuthToken) &&
             !string.IsNullOrWhiteSpace(TwilioFromNumber);
+
+        public bool IsMsg91FlowConfigured =>
+            !string.IsNullOrWhiteSpace(Msg91FlowId);
 
         public bool IsMsg91Configured =>
             EnableSms &&
