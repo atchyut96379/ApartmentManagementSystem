@@ -97,6 +97,54 @@ namespace ApartmentManagementSystem.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("ApartmentManagementSystem.Models.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ActorDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ActorUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FlatNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("ApartmentManagementSystem.Models.Expense", b =>
                 {
                     b.Property<int>("Id")
@@ -140,6 +188,10 @@ namespace ApartmentManagementSystem.Data.Migrations
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("FineAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("FlatNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -148,20 +200,36 @@ namespace ApartmentManagementSystem.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PayerName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("PaidDate")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("PaymentDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("PaymentGateway")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("PaymentStatus")
                         .HasColumnType("bit");
+
+                    b.Property<string>("RazorpayOrderId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ReceiptNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Remarks")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalPaidAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TransactionId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Year")
@@ -180,6 +248,9 @@ namespace ApartmentManagementSystem.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AssociationDesignation")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -193,6 +264,9 @@ namespace ApartmentManagementSystem.Data.Migrations
 
                     b.Property<bool>("IsOwner")
                         .HasColumnType("bit");
+
+                    b.Property<int>("MemberType")
+                        .HasColumnType("int");
 
                     b.Property<string>("OwnerName")
                         .IsRequired()

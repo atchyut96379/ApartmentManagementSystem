@@ -11,6 +11,8 @@ namespace ApartmentManagementSystem.Models
 
         public bool HasLogin { get; set; }
 
+        public bool LoginBroken { get; set; }
+
         public bool MustChangePassword { get; set; }
     }
 }

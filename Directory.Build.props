@@ -1,0 +1,9 @@
+<Project>
+  <!-- Keep ALL build/obj output under %LOCALAPPDATA% so D:\Projects is not blocked by Windows App Control
+       and we avoid duplicate AssemblyInfo CS0579 from two obj folders. Remove this file when D:\Projects builds work. -->
+  <PropertyGroup>
+    <BaseOutputPath>$(LOCALAPPDATA)\ApartmentManagementSystem-build\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(LOCALAPPDATA)\ApartmentManagementSystem-build\obj\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+</Project>

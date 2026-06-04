@@ -1,0 +1,193 @@
+@model ApartmentManagementSystem.Models.MonthlyPaymentDetailsViewModel
+
+@{
+    ViewData["Title"] = "Collection dashboard";
+}
+
+<div id="payment-live-banner" class="alert alert-info d-none mb-2" role="alert"></div>
+
+<h2 class="mb-2">Collection dashboard</h2>
+<p class="text-muted mb-3">
+    Committee view — residents use <strong>My payments</strong> for their own flat only.
+</p>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-auto">
+        <label class="form-label">Billing period</label>
+        <select id="periodSelect" class="form-select">
+            @foreach (var period in Model.AvailablePeriods)
+            {
+                var selected = period.Year == Model.Year &&
+                    string.Equals(period.Month, Model.Month, StringComparison.OrdinalIgnoreCase);
+                <option value="@period.Year|@period.Month" selected="@selected">@period.Label</option>
+            }
+        </select>
+    </div>
+</form>
+<script>
+    document.getElementById('periodSelect')?.addEventListener('change', function () {
+        var parts = this.value.split('|');
+        window.location = '?year=' + encodeURIComponent(parts[0]) + '&month=' + encodeURIComponent(parts[1]);
+    });
+</script>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body py-2">
+                <div class="text-muted small">Collected</div>
+                <div class="h5 mb-0">₹@Model.TotalCollected.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body py-2">
+                <div class="text-muted small">Still pending</div>
+                <div class="h5 mb-0">₹@Model.TotalPending.ToString("N2")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body py-2">
+                <div class="text-muted small">Flats paid</div>
+                <div class="h5 mb-0">@Model.PaidCount / @(Model.PaidCount + Model.PendingCount) (@Model.CollectionPercent%)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@if (Model.CanSendReminders)
+{
+    <div class="mb-3">
+        <form asp-action="SendReminders" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="year" value="@Model.Year" />
+            <input type="hidden" name="month" value="@Model.Month" />
+            <button type="submit" class="btn btn-warning">
+                <i class="fas fa-bell"></i> Remind all pending (email / SMS)
+            </button>
+        </form>
+        <a asp-controller="Integrations" asp-action="Index" class="btn btn-outline-secondary ms-2">
+            Configure Razorpay / SMS
+        </a>
+        <a asp-controller="AuditLog" asp-action="Index" class="btn btn-outline-secondary ms-1">
+            Activity log
+        </a>
+    </div>
+}
+
+<div class="table-responsive card shadow">
+    <table class="table table-bordered table-hover mb-0 table-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Flat</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Paid by</th>
+                <th>Txn</th>
+                <th>Gateway</th>
+                <th>Receipt</th>
+                @if (Model.CanManagePayments)
+                {
+                    <th>Actions</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.Rows)
+            {
+                <tr class="@(row.IsPaid ? "" : "table-warning")">
+                    <td>@row.FlatNumber</td>
+                    <td>@row.ResidentName</td>
+                    <td><small>@row.MemberLabel</small></td>
+                    <td>₹@row.TotalDue.ToString("N2")</td>
+                    <td>
+                        @if (row.IsPaid)
+                        {
+                            <span class="badge bg-success">Paid</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Pending</span>
+                        }
+                    </td>
+                    <td>@(row.PayerName ?? "—")</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(row.TransactionId))
+                        {
+                            <code class="small">@row.TransactionId</code>
+                        }
+                        else
+                        {
+                            @:—
+                        }
+                    </td>
+                    <td>@(row.PaymentGateway ?? "—")</td>
+                    <td>
+                        @if (row.IsPaid && row.MaintenanceId.HasValue)
+                        {
+                            <a asp-controller="ResidentPayments" asp-action="Receipt" asp-route-id="@row.MaintenanceId">View</a>
+                        }
+                        else
+                        {
+                            @:—
+                        }
+                    </td>
+                    @if (Model.CanManagePayments && row.MaintenanceId.HasValue)
+                    {
+                        <td class="text-nowrap">
+                            @if (!row.IsPaid)
+                            {
+                                <form asp-action="RemindFlat" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="maintenanceId" value="@row.MaintenanceId" />
+                                    <input type="hidden" name="year" value="@Model.Year" />
+                                    <input type="hidden" name="month" value="@Model.Month" />
+                                    <button type="submit" class="btn btn-link btn-sm p-0">Remind</button>
+                                </form>
+                                <span>|</span>
+                                <button type="button" class="btn btn-link btn-sm p-0"
+                                        data-bs-toggle="collapse" data-bs-target="#cash-@row.MaintenanceId">
+                                    Mark cash
+                                </button>
+                                <div class="collapse mt-1" id="cash-@row.MaintenanceId">
+                                    <form asp-action="MarkPaidOffline" method="post" class="d-flex gap-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="maintenanceId" value="@row.MaintenanceId" />
+                                        <input type="hidden" name="year" value="@Model.Year" />
+                                        <input type="hidden" name="month" value="@Model.Month" />
+                                        <input type="text" name="payerName" class="form-control form-control-sm"
+                                               placeholder="Payer name" required />
+                                        <button type="submit" class="btn btn-sm btn-success">OK</button>
+                                    </form>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script src="~/js/payment-realtime.js"></script>
+}

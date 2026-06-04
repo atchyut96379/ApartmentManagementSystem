@@ -106,6 +106,8 @@
                             </span>
                         }
 
+                        @await Component.InvokeAsync("AssociationRole")
+
                         <br />
                         <br />
 
@@ -167,63 +169,70 @@
                             </li>
                         }
 
-                        <!-- ADMIN MENUS -->
+                        @if (User.Identity?.Name?.Equals("Admin", StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            <li class="nav-item">
+                                <a href="/Committee" class="nav-link">
+                                    <i class="nav-icon fas fa-user-shield"></i>
+                                    <p>Committee accounts</p>
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole("Admin") || User.IsInRole("Resident"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Residents" class="nav-link">
+                                    <i class="nav-icon fas fa-users"></i>
+                                    <p>Residents</p>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="/Maintenances" class="nav-link">
+                                    <i class="nav-icon fas fa-money-bill-wave"></i>
+                                    <p>Maintenance</p>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="/Expenses" class="nav-link">
+                                    <i class="nav-icon fas fa-wallet"></i>
+                                    <p>Expenses</p>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="/Reports" class="nav-link">
+                                    <i class="nav-icon fas fa-chart-bar"></i>
+                                    <p>Reports</p>
+                                </a>
+                            </li>
+
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a href="/Payments" class="nav-link">
+                                        <i class="nav-icon fas fa-receipt"></i>
+                                        <p>Collection dashboard</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/AuditLog" class="nav-link">
+                                        <i class="nav-icon fas fa-history"></i>
+                                        <p>Activity log</p>
+                                    </a>
+                                </li>
+                            }
+
+                        }
                         @if (User.IsInRole("Admin"))
                         {
-                            <!-- Residents -->
                             <li class="nav-item">
-
-                                <a href="/Residents"
-                                   class="nav-link">
-
-                                    <i class="nav-icon fas fa-users"></i>
-
-                                    <p>Residents</p>
-
+                                <a href="/Integrations" class="nav-link">
+                                    <i class="nav-icon fas fa-plug"></i>
+                                    <p>Integrations (Razorpay / SMS)</p>
                                 </a>
-
-                            </li>
-
-                            <!-- Maintenance -->
-                            <li class="nav-item">
-
-                                <a href="/Maintenances"
-                                   class="nav-link">
-
-                                    <i class="nav-icon fas fa-money-bill-wave"></i>
-
-                                    <p>Maintenance</p>
-
-                                </a>
-
-                            </li>
-
-                            <!-- Expenses -->
-                            <li class="nav-item">
-
-                                <a href="/Expenses"
-                                   class="nav-link">
-
-                                    <i class="nav-icon fas fa-wallet"></i>
-
-                                    <p>Expenses</p>
-
-                                </a>
-
-                            </li>
-
-                            <!-- Reports -->
-                            <li class="nav-item">
-
-                                <a href="/Reports"
-                                   class="nav-link">
-
-                                    <i class="nav-icon fas fa-chart-bar"></i>
-
-                                    <p>Reports</p>
-
-                                </a>
-
                             </li>
                         }
 

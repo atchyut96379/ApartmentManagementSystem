@@ -9,7 +9,7 @@
 
     <p class="text-muted">
         We need your flat number to show your maintenance payments.
-        Logged in as <strong>@Model.Email</strong>
+        Logged in as <strong>@Model.LoginId</strong>
     </p>
 
     @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))

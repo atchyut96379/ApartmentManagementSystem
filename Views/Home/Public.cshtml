@@ -1,0 +1,26 @@
+@model ApartmentManagementSystem.Models.PublicSiteViewModel
+@{
+    ViewData["Title"] = "Home";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
+}
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h1 class="h3">@Model.ApartmentName — Residents portal</h1>
+        <p class="lead">
+            Online maintenance billing and secure payments for apartment residents and the management committee.
+        </p>
+        <ul>
+            <li>View monthly maintenance dues and payment history</li>
+            <li>Pay maintenance online (UPI, cards, netbanking via Razorpay)</li>
+            <li>Download payment receipts</li>
+            <li>Committee collection dashboard and reminders</li>
+        </ul>
+        <p class="mb-0">
+            <a class="btn btn-success" asp-controller="Account" asp-action="Login">Login to pay maintenance</a>
+        </p>
+        <p class="text-muted small mt-3 mb-0">
+            This website is operated by the @Model.ApartmentName apartment owners association / management committee.
+        </p>
+    </div>
+</div>

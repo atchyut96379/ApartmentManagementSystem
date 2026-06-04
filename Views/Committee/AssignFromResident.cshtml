@@ -1,0 +1,53 @@
+@model ApartmentManagementSystem.Models.AssignCommitteeFromResidentViewModel
+
+@{
+    ViewData["Title"] = "Assign committee from residents";
+}
+
+<h1>Assign @Model.Designation from imported list</h1>
+
+<p class="text-muted">
+    Pick someone already imported from Excel. They keep the same flat and name; they gain
+    <strong>committee admin</strong> access (can add residents, send reminders, etc.).
+    Temporary password format: <code>@ViewBag.DefaultPasswordFormat</code>
+</p>
+
+<form asp-action="AssignFromResident" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Designation" />
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="card shadow mb-3">
+        <div class="card-body">
+            <div class="mb-3">
+                <label asp-for="ResidentId" class="form-label"></label>
+                <select asp-for="ResidentId" class="form-select" required>
+                    <option value="">— Select resident —</option>
+                    @foreach (var c in Model.Candidates)
+                    {
+                        <option value="@c.Id">
+                            Flat @c.FlatNumber — @c.OwnerName (@c.MemberTypeLabel)@(c.HasLogin ? ", has login" : "")
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="NotificationEmail" class="form-label"></label>
+                <input asp-for="NotificationEmail" class="form-control" type="email" placeholder="Optional — for payment reminders only" />
+                <span class="form-text text-muted">Login uses the resident&apos;s mobile number from the import list.</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary"
+                    onclick="return confirm('Make this resident @Model.Designation with admin access?');">
+                Assign as @Model.Designation
+            </button>
+            <a asp-action="Index" class="btn btn-link">Cancel</a>
+        </div>
+    </div>
+</form>
+
+<p class="small text-muted">
+    Only use <a asp-action="Create" asp-route-designation="@Model.Designation">Create new person</a>
+    if they are not in your imported list.
+</p>

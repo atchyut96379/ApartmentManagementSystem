@@ -5,6 +5,7 @@ using ApartmentManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace ApartmentManagementSystem.Controllers
 {
@@ -13,15 +14,24 @@ namespace ApartmentManagementSystem.Controllers
         private readonly ResidentProfileService _residentProfileService;
         private readonly DashboardStatsService _dashboardStatsService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly DashboardReportExportService _reportExportService;
+        private readonly SocietySettings _society;
+        private readonly ApplicationSettings _app;
 
         public HomeController(
             ResidentProfileService residentProfileService,
             DashboardStatsService dashboardStatsService,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            DashboardReportExportService reportExportService,
+            IOptions<SocietySettings> society,
+            IOptions<ApplicationSettings> app)
         {
             _residentProfileService = residentProfileService;
             _dashboardStatsService = dashboardStatsService;
             _userManager = userManager;
+            _reportExportService = reportExportService;
+            _society = society.Value;
+            _app = app.Value;
         }
 
         [Authorize]
@@ -42,14 +52,19 @@ namespace ApartmentManagementSystem.Controllers
                 }
             }
 
-            var model = User.IsInRole("Admin")
+            var showSocietyOverview =
+                User.IsInRole("Admin") || User.IsInRole("Resident");
+
+            var model = showSocietyOverview
                 ? _dashboardStatsService.GetSocietyStats()
                 : new DashboardViewModel();
 
-            if (User.IsInRole("Admin"))
+            if (showSocietyOverview)
             {
                 model.PendingMaintenanceList =
                     await _dashboardStatsService.GetPendingMaintenancesAsync();
+                model.AssociationCommittee =
+                    await _dashboardStatsService.GetAssociationCommitteeAsync();
             }
 
             if (User.IsInRole("Resident"))
@@ -75,6 +90,47 @@ namespace ApartmentManagementSystem.Controllers
             return View(model);
         }
 
+        [Authorize(Roles = "Admin,Resident")]
+        public async Task<IActionResult> DownloadExcelReport()
+        {
+            var bytes = await _reportExportService.BuildDashboardWorkbookAsync();
+            var fileName = $"ApartmentDashboard_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+            return File(
+                bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+
+        [AllowAnonymous]
+        public IActionResult Public()
+        {
+            return View(BuildPublicSiteModel());
+        }
+
+        [AllowAnonymous]
+        public IActionResult Privacy()
+        {
+            return View(BuildPublicSiteModel());
+        }
+
+        [AllowAnonymous]
+        public IActionResult Terms()
+        {
+            return View(BuildPublicSiteModel());
+        }
+
+        [AllowAnonymous]
+        public IActionResult Refund()
+        {
+            return View(BuildPublicSiteModel());
+        }
+
+        [AllowAnonymous]
+        public IActionResult Contact()
+        {
+            return View(BuildPublicSiteModel());
+        }
+
         [AllowAnonymous]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
@@ -83,6 +139,22 @@ namespace ApartmentManagementSystem.Controllers
             {
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
             });
+        }
+
+        private PublicSiteViewModel BuildPublicSiteModel()
+        {
+            var baseUrl = !string.IsNullOrWhiteSpace(_app.AppUrl)
+                ? _app.AppUrl.TrimEnd('/')
+                : $"{Request.Scheme}://{Request.Host}";
+
+            return new PublicSiteViewModel
+            {
+                ApartmentName = _society.ApartmentName,
+                ContactEmail = _society.ContactEmail,
+                ContactPhone = _society.ContactPhone,
+                Address = _society.Address,
+                AppBaseUrl = baseUrl
+            };
         }
 
         private async Task<ResidentPaymentsViewModel> BuildResidentPaymentsViewModelAsync(

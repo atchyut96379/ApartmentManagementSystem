@@ -1,0 +1,74 @@
+@model ApartmentManagementSystem.Models.BulkLoginProvisioningResult
+
+@{
+    ViewData["Title"] = "Bulk login results";
+}
+
+<h1>Bulk login results</h1>
+
+<div class="alert alert-success">
+    <strong>@Model.CreatedCount</strong> created,
+    <strong>@Model.SkippedCount</strong> skipped
+    (of @Model.EligibleCount eligible).
+</div>
+
+@if (!string.IsNullOrEmpty(Model.SpreadsheetDownloadId))
+{
+    <p>
+        <a asp-action="DownloadBulkLoginCredentials" asp-route-id="@Model.SpreadsheetDownloadId"
+           class="btn btn-success">
+            <i class="fas fa-file-excel me-1"></i> Download credentials Excel
+        </a>
+        <span class="text-muted small ms-2">Link valid for 30 minutes. Store file securely.</span>
+    </p>
+}
+
+<p class="text-muted">
+    Password format: @Model.PasswordFormatDescription<br />
+    Residents sign in at the same <strong>Login</strong> page with their <strong>mobile number</strong> and temporary password, then choose a new password.
+</p>
+
+@if (Model.Rows.Any())
+{
+    <table class="table table-bordered table-striped table-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Flat</th>
+                <th>Name</th>
+                <th>Login mobile</th>
+                <th>Password</th>
+                <th>Status</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.Rows)
+            {
+                <tr>
+                    <td>@row.FlatNumber</td>
+                    <td>@row.ResidentName</td>
+                    <td>@row.LoginPhone</td>
+                    <td>
+                        @if (row.Status == "Created")
+                        {
+                            <code>@row.TemporaryPassword</code>
+                        }
+                    </td>
+                    <td>
+                        @if (row.Status == "Created")
+                        {
+                            <span class="badge bg-success">@row.Status</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">@row.Status</span>
+                        }
+                    </td>
+                    <td>@row.Message</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<a asp-action="Index" class="btn btn-primary">Back to residents</a>

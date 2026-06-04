@@ -1,0 +1,22 @@
+{
+  "_comment": "Copy each key into Azure Portal → App Service → Configuration → Application settings. Do not commit real secrets.",
+  "ASPNETCORE_ENVIRONMENT": "Production",
+  "DATABASE_MIGRATE_ON_STARTUP": "true",
+  "ConnectionStrings__DefaultConnection": "Server=tcp:YOUR-SQL.database.windows.net,1433;Database=ApartmentManagementDB;User ID=sqladmin;Password=YOUR_PASSWORD;Encrypt=True;TrustServerCertificate=False;",
+  "Application__AppUrl": "https://YOURAPP.azurewebsites.net",
+  "Society__ApartmentName": "Marvel Rocks",
+  "Society__ContactEmail": "committee@marvelrocks.in",
+  "Society__ContactPhone": "+91-XXXXXXXXXX",
+  "Society__Address": "Marvel Rocks Apartment, City",
+  "Payment__Provider": "Razorpay",
+  "Payment__Razorpay__KeyId": "rzp_live_XXXX",
+  "Payment__Razorpay__KeySecret": "YOUR_LIVE_SECRET",
+  "Payment__Razorpay__WebhookSecret": "YOUR_WEBHOOK_SECRET",
+  "Notification__EnableEmail": "true",
+  "Notification__SmtpHost": "smtp.gmail.com",
+  "Notification__SmtpPort": "587",
+  "Notification__SmtpUser": "your@gmail.com",
+  "Notification__SmtpPassword": "app-password",
+  "Notification__FromEmail": "your@gmail.com",
+  "Notification__FromName": "Marvel Rocks Apartment"
+}

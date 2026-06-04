@@ -1,0 +1,238 @@
+@model ApartmentManagementSystem.Models.IntegrationsConfigureViewModel
+
+@{
+    ViewData["Title"] = "Integrations";
+    var status = Model.Status;
+}
+
+<h2 class="mb-2">Email, SMS &amp; payment gateway</h2>
+<p class="text-muted">
+    Fill in the form below and click <strong>Save settings</strong>.
+    Credentials are stored in <code>integrations.local.json</code> on the server (not in git).
+</p>
+
+<div class="card border-success mb-3">
+    <div class="card-header bg-success text-white">Enable real payments (Razorpay)</div>
+    <div class="card-body small">
+        <ol class="mb-2">
+            <li>Create a free account at <a href="https://dashboard.razorpay.com" target="_blank" rel="noopener">dashboard.razorpay.com</a>.</li>
+            <li>Go to <strong>Account &amp; Settings → API Keys</strong> → Generate <strong>Test</strong> keys (<code>rzp_test_...</code>).</li>
+            <li>Below, set <strong>Provider</strong> to <strong>Razorpay (live)</strong>, paste Key ID and Key Secret, then <strong>Save settings</strong>.</li>
+            <li>Residents open <strong>My payments → Pay</strong> — they will see <strong>Pay with Razorpay</strong> (not simulation).</li>
+            <li>Optional webhook (recommended on a public server): Razorpay → Webhooks → URL
+                <code>@(status.AppUrl.TrimEnd('/'))/api/razorpay/webhook</code> — event <code>payment.captured</code>.
+                Paste the webhook secret below.</li>
+            <li>When ready for real money, switch to <strong>Live</strong> keys in Razorpay and update keys here.</li>
+        </ol>
+        <p class="mb-2 small">
+            <strong>Razorpay asks for a website?</strong> Use your public app URL (not localhost) e.g.
+            <code>@(status.AppUrl.TrimEnd('/'))/Home/Public</code> — plus
+            <a href="/Home/Privacy" target="_blank">Privacy</a>,
+            <a href="/Home/Terms" target="_blank">Terms</a>,
+            <a href="/Home/Refund" target="_blank">Refund</a>.
+            For <strong>test API keys</strong> you can click <strong>Add later</strong> in Razorpay onboarding.
+        </p>
+        <p class="mb-0 text-muted">
+            Current payment mode:
+            @if (status.RazorpayReady)
+            {
+                <span class="badge bg-success">Razorpay active</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">Simulation (until Razorpay keys are saved)</span>
+            }
+        </p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@if (!Model.ConfigFileExists)
+{
+    <div class="alert alert-warning">
+        No saved settings yet. Complete the form and click <strong>Save settings</strong> once.
+    </div>
+}
+
+<form asp-action="Save" method="post" class="card shadow mb-4">
+    @Html.AntiForgeryToken()
+    <div class="card-header bg-primary text-white">Configure &amp; save</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2">Email (Gmail / SMTP)</h5>
+                <div class="form-check mb-2">
+                    <input asp-for="EnableEmail" class="form-check-input" />
+                    <label asp-for="EnableEmail" class="form-check-label"></label>
+                </div>
+                <div class="mb-2">
+                    <label asp-for="SmtpHost" class="form-label">SMTP host</label>
+                    <input asp-for="SmtpHost" class="form-control" />
+                </div>
+                <div class="row">
+                    <div class="col-6 mb-2">
+                        <label asp-for="SmtpPort" class="form-label">Port</label>
+                        <input asp-for="SmtpPort" class="form-control" type="number" />
+                    </div>
+                    <div class="col-6 mb-2 d-flex align-items-end">
+                        <div class="form-check">
+                            <input asp-for="SmtpUseSsl" class="form-check-input" />
+                            <label asp-for="SmtpUseSsl" class="form-check-label">Use SSL/TLS</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label asp-for="SmtpUser" class="form-label">SMTP user (Gmail address)</label>
+                    <input asp-for="SmtpUser" class="form-control" autocomplete="username" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="SmtpPassword" class="form-label"></label>
+                    <input asp-for="SmtpPassword" class="form-control" type="password" autocomplete="new-password"
+                           placeholder="@(Model.PasswordOnFile ? "Leave blank to keep saved password" : "Gmail app password")" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="FromEmail" class="form-label">From email</label>
+                    <input asp-for="FromEmail" class="form-control" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="FromName" class="form-label">From name</label>
+                    <input asp-for="FromName" class="form-control" />
+                </div>
+                <span class="badge @(status.EmailReady ? "bg-success" : "bg-warning text-dark")">
+                    Email: @(status.EmailReady ? "Ready" : "Not configured")
+                </span>
+            </div>
+
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2">SMS</h5>
+                <div class="form-check mb-2">
+                    <input asp-for="EnableSms" class="form-check-input" />
+                    <label asp-for="EnableSms" class="form-check-label"></label>
+                </div>
+                <div class="mb-2">
+                    <label asp-for="SmsProvider" class="form-label">Provider</label>
+                    <select asp-for="SmsProvider" class="form-select">
+                        <option value="Msg91">Msg91 (India)</option>
+                        <option value="Twilio">Twilio</option>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Msg91AuthKey" class="form-label">MSG91 Auth Key</label>
+                    <input asp-for="Msg91AuthKey" class="form-control" type="password"
+                           placeholder="@(Model.Msg91KeyOnFile ? "Leave blank to keep saved key" : "")" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Msg91SenderId" class="form-label">MSG91 Sender ID (6 chars)</label>
+                    <input asp-for="Msg91SenderId" class="form-control" />
+                </div>
+                <hr />
+                <div class="mb-2">
+                    <label asp-for="TwilioAccountSid" class="form-label">Twilio Account SID</label>
+                    <input asp-for="TwilioAccountSid" class="form-control" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="TwilioAuthToken" class="form-label">Twilio Auth Token</label>
+                    <input asp-for="TwilioAuthToken" class="form-control" type="password"
+                           placeholder="@(Model.TwilioTokenOnFile ? "Leave blank to keep saved token" : "")" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="TwilioFromNumber" class="form-label">Twilio From number</label>
+                    <input asp-for="TwilioFromNumber" class="form-control" placeholder="+1..." />
+                </div>
+                <span class="badge @(status.SmsReady ? "bg-success" : "bg-warning text-dark")">
+                    SMS: @(status.SmsReady ? "Ready" : "Not configured")
+                </span>
+            </div>
+
+            <div class="col-12">
+                <h5 class="border-bottom pb-2">Razorpay payment gateway</h5>
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label asp-for="PaymentProvider" class="form-label">Provider</label>
+                        <select asp-for="PaymentProvider" class="form-select">
+                            <option value="Simulation">Simulation (testing)</option>
+                            <option value="Razorpay">Razorpay (live)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="RazorpayKeyId" class="form-label">Key ID</label>
+                        <input asp-for="RazorpayKeyId" class="form-control" placeholder="rzp_test_..." />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="RazorpayKeySecret" class="form-label">Key secret</label>
+                        <input asp-for="RazorpayKeySecret" class="form-control" type="password"
+                               placeholder="@(Model.RazorpaySecretOnFile ? "Leave blank to keep" : "")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="RazorpayWebhookSecret" class="form-label">Webhook secret</label>
+                        <input asp-for="RazorpayWebhookSecret" class="form-control" type="password" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="AppUrl" class="form-label">Public app URL (for email links)</label>
+                        <input asp-for="AppUrl" class="form-control" placeholder="https://localhost:7119" />
+                    </div>
+                </div>
+                <p class="small text-muted mt-2 mb-1">
+                    <strong>Webhook URL</strong> (POST only — do not open in browser):
+                    <code class="d-block text-break">@status.WebhookUrl</code>
+                </p>
+                <span class="badge @(status.RazorpayReady ? "bg-success" : "bg-warning text-dark") me-1">
+                    Razorpay: @(status.RazorpayReady ? "Live" : "Not ready")
+                </span>
+                <span class="badge @(status.WebhookReady ? "bg-success" : "bg-secondary")">
+                    Webhook secret @(status.WebhookReady ? "set" : "not set")
+                </span>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg mt-3">
+            <i class="fas fa-save"></i> Save settings
+        </button>
+    </div>
+</form>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body">
+                <h5>Test email</h5>
+                <form asp-action="TestEmail" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="email" name="testEmail" class="form-control mb-2" placeholder="your@email.com" required />
+                    <button type="submit" class="btn btn-sm btn-outline-primary" @(status.EmailReady ? "" : "disabled")>
+                        Send test email
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body">
+                <h5>Test SMS</h5>
+                <form asp-action="TestSms" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="text" name="testPhone" class="form-control mb-2" placeholder="10-digit mobile" required />
+                    <button type="submit" class="btn btn-sm btn-outline-primary" @(status.SmsReady ? "" : "disabled")>
+                        Send test SMS
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mt-4">
+    <div class="card-body small text-muted">
+        <strong>Gmail:</strong> Google Account → Security → 2-Step Verification → App passwords.<br />
+        <strong>MSG91:</strong> <a href="https://msg91.com" target="_blank" rel="noopener">msg91.com</a> → API keys &amp; sender ID.<br />
+        <strong>Razorpay webhook 405 in browser:</strong> Normal — Razorpay sends POST; paste URL only in Razorpay Dashboard → Webhooks.
+    </div>
+</div>

@@ -1,0 +1,31 @@
+@model ApartmentManagementSystem.Models.BulkCreateLoginsViewModel
+
+@{
+    ViewData["Title"] = "Create logins for all residents";
+}
+
+<h1>Create logins for imported residents</h1>
+
+<div class="alert alert-info">
+    <strong>@Model.ResidentsWithoutLogin</strong> resident(s) have no login yet.
+    <strong>@Model.ResidentsWithValidPhone</strong> have a valid mobile number and can receive an account.
+    Temporary password: <code>@Model.PasswordFormatDescription</code>.
+    On first sign-in each person chooses a new password.
+</div>
+
+@if (Model.ResidentsWithoutLogin > Model.ResidentsWithValidPhone)
+{
+    <div class="alert alert-warning">
+        Some residents are missing a valid phone number. Edit those records and add a 10-digit mobile before creating logins.
+    </div>
+}
+
+<form asp-action="BulkCreateLogins" method="post">
+    @Html.AntiForgeryToken()
+
+    <button type="submit" class="btn btn-primary"
+            onclick="return confirm('Create logins for residents with valid mobile numbers?');">
+        Create logins (@Model.ResidentsWithValidPhone)
+    </button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>

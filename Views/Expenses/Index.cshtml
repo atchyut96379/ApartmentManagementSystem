@@ -6,9 +6,12 @@
 
 <h1>Expenses List</h1>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Add Expense</a>
-</p>
+@if (User.IsInRole("Admin"))
+{
+    <p>
+        <a asp-action="Create" class="btn btn-primary">Add Expense</a>
+    </p>
+}
 
 <table class="table table-bordered table-striped">
     <thead class="table-dark">
@@ -29,9 +32,14 @@
                 <td>@item.ExpenseDate.ToString("dd-MM-yyyy HH:mm")</td>
                 <td>@item.Description</td>
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <span> | </span>
+                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                        <span> | </span>
+                        <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    }
                 </td>
             </tr>
         }

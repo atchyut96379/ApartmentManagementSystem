@@ -1,0 +1,19 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace ApartmentManagementSystem.Models
+{
+    public class ResetForgottenPasswordViewModel
+    {
+        [Required]
+        [StringLength(100, MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "New password")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Compare(nameof(NewPassword))]
+        [Display(Name = "Confirm new password")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

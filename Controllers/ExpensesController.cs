@@ -1,3 +1,4 @@
+using ApartmentManagementSystem.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,7 @@ using ApartmentManagementSystem.Models;
 
 namespace ApartmentManagementSystem.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class ExpensesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -16,13 +17,13 @@ namespace ApartmentManagementSystem.Controllers
             _context = context;
         }
 
-        // GET: Expenses
+        [Authorize(Roles = "Admin,Resident")]
         public async Task<IActionResult> Index()
         {
             return View(await _context.Expenses.ToListAsync());
         }
 
-        // GET: Expenses/Details/5
+        [Authorize(Roles = "Admin,Resident")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -41,15 +42,17 @@ namespace ApartmentManagementSystem.Controllers
             return View(expense);
         }
 
-        // GET: Expenses/Create
+        [Authorize(Roles = "Admin")]
+        [RequireCommitteeAdmin]
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Expenses/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        [RequireCommitteeAdmin]
         public async Task<IActionResult> Create(
             [Bind("Id,ExpenseType,Amount,ExpenseDate,Description")]
             Expense expense)
@@ -65,7 +68,8 @@ namespace ApartmentManagementSystem.Controllers
             return View(expense);
         }
 
-        // GET: Expenses/Edit/5
+        [Authorize(Roles = "Admin")]
+        [RequireCommitteeAdmin]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -83,9 +87,10 @@ namespace ApartmentManagementSystem.Controllers
             return View(expense);
         }
 
-        // POST: Expenses/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        [RequireCommitteeAdmin]
         public async Task<IActionResult> Edit(
             int id,
             [Bind("Id,ExpenseType,Amount,ExpenseDate,Description")]
@@ -121,7 +126,8 @@ namespace ApartmentManagementSystem.Controllers
             return View(expense);
         }
 
-        // GET: Expenses/Delete/5
+        [Authorize(Roles = "Admin")]
+        [RequireCommitteeAdmin]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -140,9 +146,10 @@ namespace ApartmentManagementSystem.Controllers
             return View(expense);
         }
 
-        // POST: Expenses/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        [RequireCommitteeAdmin]
         public async Task<IActionResult> DeleteConfirmed(int? id)
         {
             var expense = await _context.Expenses.FindAsync(id);

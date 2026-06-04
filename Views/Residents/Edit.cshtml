@@ -1,7 +1,11 @@
 @model ApartmentManagementSystem.Models.Resident
+@using ApartmentManagementSystem.Models
+@using ApartmentManagementSystem.Services
 
 @{
     ViewData["Title"] = "Edit Resident";
+    var designations = AssociationDesignations.All;
+    var canChangeDesignation = ViewBag.CanChangeDesignation == true;
 }
 
 <h1>Edit Resident</h1>
@@ -9,54 +13,110 @@
 <h4>Resident</h4>
 <hr />
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-8">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
             <input type="hidden" asp-for="UserId" />
+            <input type="hidden" asp-for="CreatedDate" />
+
             <div class="form-group mb-3">
-                <label asp-for="FlatNumber" class="control-label">Flat Number</label>
+                <label asp-for="FlatNumber" class="control-label"></label>
                 <input asp-for="FlatNumber" class="form-control" />
                 <span asp-validation-for="FlatNumber" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
-                <label asp-for="OwnerName" class="control-label">Resident Name</label>
+                <label asp-for="OwnerName" class="control-label"></label>
                 <input asp-for="OwnerName" class="form-control" />
                 <span asp-validation-for="OwnerName" class="text-danger"></span>
             </div>
             <div class="form-group mb-3">
-                <label asp-for="PhoneNumber" class="control-label">Phone</label>
+                <label asp-for="PhoneNumber" class="control-label"></label>
                 <input asp-for="PhoneNumber" class="form-control" />
                 <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                <div class="form-text">10-digit mobile — login username. Update here if the resident changes their number.</div>
             </div>
             <div class="form-group mb-3">
-                <label asp-for="Email" class="control-label">Email</label>
-                <input asp-for="Email" class="form-control" />
+                <label asp-for="Email" class="control-label"></label>
+                <input asp-for="Email" class="form-control" type="email" />
                 <span asp-validation-for="Email" class="text-danger"></span>
+                <div class="form-text">Optional — for reminder emails only, not for login.</div>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Type</label>
-                <div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="IsOwner" id="typeOwner" value="true" checked="@Model.IsOwner" />
-                        <label class="form-check-label" for="typeOwner">Owner</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="IsOwner" id="typeTenant" value="false" checked="@(!Model.IsOwner)" />
-                        <label class="form-check-label" for="typeTenant">Tenant</label>
-                    </div>
+
+            @if (canChangeDesignation)
+            {
+                <div class="alert alert-info">
+                    To assign or change President, Vice President, Secretary, etc., use
+                    <a asp-action="ChangeDesignation" asp-route-id="@Model.Id"><strong>Change role</strong></a>
+                    on the Residents list (President and Secretary only).
                 </div>
+            }
+
+            <div class="form-group mb-3">
+                <label class="control-label">Member type</label>
+                @if (canChangeDesignation)
+                {
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input member-type" type="radio" asp-for="MemberType" id="typeOwner"
+                                   value="@((int)ResidentMemberType.Owner)" />
+                            <label class="form-check-label" for="typeOwner">Owner</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input member-type" type="radio" asp-for="MemberType" id="typeTenant"
+                                   value="@((int)ResidentMemberType.Tenant)" />
+                            <label class="form-check-label" for="typeTenant">Tenant</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input member-type" type="radio" asp-for="MemberType" id="typeAssocAdmin"
+                                   value="@((int)ResidentMemberType.AssociationAdmin)" />
+                            <label class="form-check-label" for="typeAssocAdmin">Association admin</label>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="form-control-plaintext mb-0">
+                        @ResidentMemberHelper.GetMemberTypeLabel(Model)
+                        @if (Model.MemberType == ResidentMemberType.AssociationAdmin && !string.IsNullOrEmpty(Model.AssociationDesignation))
+                        {
+                            <span class="text-muted">(@Model.AssociationDesignation)</span>
+                        }
+                    </p>
+                    <input type="hidden" asp-for="MemberType" />
+                    <input type="hidden" asp-for="AssociationDesignation" />
+                }
             </div>
+
+            @if (canChangeDesignation)
+            {
+                <div class="form-group mb-3" id="designationGroup">
+                    <label asp-for="AssociationDesignation" class="control-label"></label>
+                    <select asp-for="AssociationDesignation" class="form-select">
+                        <option value="">— Select —</option>
+                        @foreach (var d in designations)
+                        {
+                            <option value="@d">@d</option>
+                        }
+                    </select>
+                    <span asp-validation-for="AssociationDesignation" class="text-danger"></span>
+                </div>
+            }
+
             <div class="form-group mb-3" id="tenantFieldsGroup">
-                <label asp-for="PropertyOwnerName" class="control-label">Property Owner Name</label>
+                <label asp-for="PropertyOwnerName" class="control-label"></label>
                 <input asp-for="PropertyOwnerName" class="form-control" />
-                <span asp-validation-for="PropertyOwnerName" class="text-danger"></span>
-                <label asp-for="OwnerContactNumber" class="control-label mt-2">Owner Contact Number</label>
+                <label asp-for="OwnerContactNumber" class="control-label mt-2"></label>
                 <input asp-for="OwnerContactNumber" class="form-control" />
-                <span asp-validation-for="OwnerContactNumber" class="text-danger"></span>
-                <small class="text-muted">Tenants need property owner name or owner contact number.</small>
             </div>
-            <input type="hidden" asp-for="CreatedDate" />
+
+            @if (!string.IsNullOrEmpty(Model.UserId))
+            {
+                <p class="text-muted">
+                    Login exists. Use <strong>Reset password</strong> on the residents list to issue a new temporary password.
+                </p>
+            }
+
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>
@@ -71,12 +131,24 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script>
-        function togglePropertyOwner() {
-            var isTenant = document.getElementById('typeTenant').checked;
-            document.getElementById('tenantFieldsGroup').style.display = isTenant ? 'block' : 'none';
+        const assocAdmin = '@((int)ResidentMemberType.AssociationAdmin)';
+        const tenant = '@((int)ResidentMemberType.Tenant)';
+
+        function selectedMemberType() {
+            const checked = document.querySelector('.member-type:checked');
+            return checked ? checked.value : '@((int)ResidentMemberType.Owner)';
         }
-        document.getElementById('typeOwner').addEventListener('change', togglePropertyOwner);
-        document.getElementById('typeTenant').addEventListener('change', togglePropertyOwner);
-        togglePropertyOwner();
+
+        function toggleMemberFields() {
+            const type = selectedMemberType();
+            document.getElementById('designationGroup').style.display =
+                type === assocAdmin ? 'block' : 'none';
+            document.getElementById('tenantFieldsGroup').style.display =
+                type === tenant ? 'block' : 'none';
+        }
+
+        document.querySelectorAll('.member-type').forEach(el =>
+            el.addEventListener('change', toggleMemberFields));
+        toggleMemberFields();
     </script>
 }

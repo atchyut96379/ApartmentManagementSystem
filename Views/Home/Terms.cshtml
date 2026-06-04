@@ -1,0 +1,40 @@
+@model ApartmentManagementSystem.Models.PublicSiteViewModel
+@{
+    ViewData["Title"] = "Terms & Conditions";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
+}
+
+<h1>Terms &amp; Conditions</h1>
+<p class="text-muted">Last updated: @DateTime.UtcNow.ToString("MMMM yyyy")</p>
+
+<p>
+    By using the @Model.ApartmentName residents portal, you agree to these terms as a resident or
+    authorized committee member of the society.
+</p>
+
+<h2 class="h5 mt-4">Service</h2>
+<p>
+    The portal displays maintenance amounts approved by the society, applicable late fines, and payment status.
+    Online payments are processed by Razorpay; successful payment updates your maintenance record and issues a receipt.
+</p>
+
+<h2 class="h5 mt-4">User responsibilities</h2>
+<ul>
+    <li>Keep your login mobile number and password confidential</li>
+    <li>Pay the correct flat’s dues; disputes on amount should be raised with the committee before paying</li>
+    <li>Provide accurate contact details for receipts and reminders</li>
+</ul>
+
+<h2 class="h5 mt-4">Committee</h2>
+<p>
+    Committee administrators may record offline (cash) payments, send reminders, and manage resident accounts
+    in accordance with society bylaws.
+</p>
+
+<h2 class="h5 mt-4">Limitation</h2>
+<p>
+    The portal is provided for society operations. We are not liable for payment gateway outages beyond our control;
+    in such cases, residents may use alternate payment methods notified by the committee.
+</p>
+
+<p><a asp-action="Contact">Contact the committee</a> for questions.</p>

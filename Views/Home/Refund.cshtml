@@ -1,0 +1,35 @@
+@model ApartmentManagementSystem.Models.PublicSiteViewModel
+@{
+    ViewData["Title"] = "Refund & Cancellation";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
+}
+
+<h1>Refund &amp; Cancellation Policy</h1>
+<p class="text-muted">Last updated: @DateTime.UtcNow.ToString("MMMM yyyy")</p>
+
+<h2 class="h5 mt-4">Maintenance payments</h2>
+<p>
+    Maintenance charges are society dues, not retail product purchases. Once a payment is successfully recorded
+    for a given flat and month, it is treated as <strong>final</strong> unless the committee approves a correction.
+</p>
+
+<h2 class="h5 mt-4">Duplicate or wrong flat payment</h2>
+<p>
+    If you paid the wrong amount or wrong flat by mistake, contact the management committee within
+    <strong>7 working days</strong> with your transaction ID and receipt. Approved corrections may be adjusted in
+    the next month’s account or refunded at the committee’s discretion via the original payment method where possible.
+</p>
+
+<h2 class="h5 mt-4">Failed / abandoned payments</h2>
+<p>
+    If payment fails or you close the payment window, no charge is completed and your dues remain pending.
+    You may retry from <strong>My payments</strong>.
+</p>
+
+<h2 class="h5 mt-4">Chargebacks</h2>
+<p>
+    Unauthorized chargebacks may be disputed with bank and Razorpay records. Residents should contact the committee
+    first for any billing issue.
+</p>
+
+<p><a asp-action="Contact">Contact</a> · <a asp-action="Terms">Terms</a></p>

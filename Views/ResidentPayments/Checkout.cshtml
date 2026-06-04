@@ -1,0 +1,158 @@
+@model ApartmentManagementSystem.Models.PaymentCheckoutViewModel
+
+@{
+    ViewData["Title"] = "Pay maintenance";
+}
+
+<h2 class="mb-3">Payment checkout</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card shadow col-lg-6 mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Flat</dt>
+            <dd class="col-sm-8">@Model.FlatNumber</dd>
+            <dt class="col-sm-4">Name</dt>
+            <dd class="col-sm-8">@Model.ResidentName</dd>
+            <dt class="col-sm-4">Month</dt>
+            <dd class="col-sm-8">@Model.Month @Model.Year</dd>
+            <dt class="col-sm-4">Amount</dt>
+            <dd class="col-sm-8">₹@Model.Amount.ToString("N2")</dd>
+            <dt class="col-sm-4">Fine</dt>
+            <dd class="col-sm-8">₹@Model.Fine.ToString("N2")</dd>
+            <dt class="col-sm-4">Total</dt>
+            <dd class="col-sm-8"><strong>₹@Model.TotalAmount.ToString("N2")</strong></dd>
+            <dt class="col-sm-4">Gateway</dt>
+            <dd class="col-sm-8">
+                @if (Model.RazorpayReady)
+                {
+                    <span class="badge bg-success">Razorpay @(Model.IsTestMode ? "(test mode)" : "(live)")</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Simulation (testing only)</span>
+                }
+            </dd>
+        </dl>
+    </div>
+</div>
+
+@if (Model.RazorpayReady && !string.IsNullOrEmpty(Model.RazorpayOrderId))
+{
+    <div class="alert alert-info">
+        You will pay via <strong>Razorpay</strong> (UPI, card, netbanking).
+        @if (Model.IsTestMode)
+        {
+            <div class="mt-2 small">
+                <strong>Test mode — easiest options:</strong>
+                <ul class="mb-1">
+                    <li><strong>Netbanking</strong> → pick any bank → click <strong>Success</strong> on Razorpay’s mock page (recommended).</li>
+                    <li><strong>Cards</strong> → domestic Mastercard only:
+                        <code>5267 3181 8797 5449</code>, any future expiry, any CVV, OTP <code>1234</code> if asked.</li>
+                    <li><strong>UPI</strong> → <code>success@razorpay</code> (not your real UPI ID).</li>
+                </ul>
+                <span class="text-danger">
+                    Do <strong>not</strong> use your real debit/credit card — bank OTP means a real card; you may see
+                    “International cards are not supported”.
+                </span>
+            </div>
+        }
+    </div>
+
+    <button type="button" id="rzpPayBtn" class="btn btn-success btn-lg">
+        <i class="fas fa-credit-card me-1"></i> Pay ₹@Model.TotalAmount.ToString("N2") with Razorpay
+    </button>
+    <form id="rzpForm" asp-action="CompleteRazorpay" method="post" class="d-none">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.MaintenanceId" />
+        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+        <input type="hidden" name="razorpay_order_id" id="razorpay_order_id" />
+        <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id" />
+        <input type="hidden" name="razorpay_signature" id="razorpay_signature" />
+    </form>
+}
+else if (!string.IsNullOrEmpty(Model.RazorpayError))
+{
+    <div class="alert alert-danger">
+        <strong>Razorpay could not start:</strong> @Model.RazorpayError
+        <p class="mb-0 small mt-2">Check Key ID and Key Secret in <a asp-controller="Integrations" asp-action="Index">Integrations</a>.</p>
+    </div>
+}
+else if (Model.SetupSteps.Count > 0)
+{
+    <div class="alert alert-warning">
+        <strong>Razorpay is not active yet.</strong> Committee admin must complete setup:
+        <ol class="mb-0 mt-2">
+            @foreach (var step in Model.SetupSteps)
+            {
+                <li>@step</li>
+            }
+        </ol>
+        @if (User.IsInRole("Admin"))
+        {
+            <p class="mb-0 mt-2">
+                <a asp-controller="Integrations" asp-action="Index" class="btn btn-sm btn-primary">Open Integrations</a>
+            </p>
+        }
+    </div>
+}
+
+@if (Model.ShowSimulation)
+{
+    <div class="mt-3 border-top pt-3">
+        <form asp-action="CompleteSimulation" method="post"
+              onsubmit="return confirm('Record test payment of ₹@Model.TotalAmount.ToString("N2")? (No real money)');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.MaintenanceId" />
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+            <button type="submit" class="btn btn-outline-secondary">
+                Pay now (simulation — no real payment)
+            </button>
+        </form>
+        <p class="text-muted small mt-2 mb-0">
+            Simulation is for testing only. To accept real UPI/card payments, configure Razorpay under
+            <strong>Integrations</strong> and set Provider to <strong>Razorpay</strong>.
+        </p>
+    </div>
+}
+
+<a href="@Model.ReturnUrl" class="btn btn-link mt-2">Cancel</a>
+
+@section Scripts {
+    @if (Model.RazorpayReady && !string.IsNullOrEmpty(Model.RazorpayOrderId))
+    {
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <script>
+            document.getElementById('rzpPayBtn').onclick = function () {
+                var options = {
+                    key: '@Model.RazorpayKeyId',
+                    amount: @Model.AmountPaise,
+                    currency: 'INR',
+                    name: '@(ViewData["SocietyName"] ?? "Apartment Maintenance")',
+                    description: '@Model.Month @Model.Year — Flat @Model.FlatNumber',
+                    order_id: '@Model.RazorpayOrderId',
+                    prefill: {
+                        name: '@Model.ResidentName',
+                        contact: '',
+                        email: ''
+                    },
+                    theme: { color: '#198754' },
+                    handler: function (response) {
+                        document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                        document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                        document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                        document.getElementById('rzpForm').submit();
+                    },
+                    modal: {
+                        ondismiss: function () { }
+                    }
+                };
+                new Razorpay(options).open();
+            };
+        </script>
+    }
+}

@@ -1,0 +1,26 @@
+{
+  "Society": {
+    "ApartmentName": "Marvel Rocks",
+    "LoginEmailDomain": "marvelrocks.local",
+    "ContactEmail": "committee@your-society.example",
+    "ContactPhone": "+91-XXXXXXXXXX",
+    "Address": "Your apartment address"
+  },
+  "Identity": {
+    "ResetAndSeedAdminOnStartup": false
+  },
+  "Payment": {
+    "Provider": "Simulation",
+    "LateFineAmount": 50
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=YOUR_PC\\SQLEXPRESS;Database=ApartmentManagementDB;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

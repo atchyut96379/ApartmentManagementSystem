@@ -12,8 +12,8 @@ namespace ApartmentManagementSystem.Services
         {
             "FlatNumber",
             "ResidentName",
-            "Email",
-            "Phone",
+            "Notification email",
+            "Login mobile",
             "ResidentType",
             "PropertyOwnerName"
         };
@@ -45,7 +45,7 @@ namespace ApartmentManagementSystem.Services
 
             sheet.Cell(2, 1).Value = "101";
             sheet.Cell(2, 2).Value = "Jane Doe";
-            sheet.Cell(2, 3).Value = "jane@example.com";
+            sheet.Cell(2, 3).Value = "";
             sheet.Cell(2, 4).Value = "9876543210";
             sheet.Cell(2, 5).Value = "Owner";
             sheet.Cell(2, 6).Value = "";
@@ -59,33 +59,30 @@ namespace ApartmentManagementSystem.Services
 
             sheet.Columns().AdjustToContents();
 
-            var societySheet = workbook.Worksheets.Add("SocietyFormat");
-            societySheet.Cell(1, 1).Value = "S.No";
-            societySheet.Cell(1, 2).Value = "Name";
-            societySheet.Cell(1, 3).Value = "Flat No";
-            societySheet.Range(1, 4, 1, 5).Merge();
-            societySheet.Cell(1, 4).Value = "Resident Type";
-            societySheet.Cell(1, 6).Value = "Owner Contact Number";
-            societySheet.Cell(1, 7).Value = "Tenant Contact number";
+            var societySheet = workbook.Worksheets.Add("SocietyExample");
+            societySheet.Cell(1, 1).Value = "Name";
+            societySheet.Cell(1, 2).Value = "Flat No";
+            societySheet.Range(1, 3, 1, 4).Merge();
+            societySheet.Cell(1, 3).Value = "Resident Type";
+            societySheet.Cell(1, 5).Value = "Owner Contact Number";
+            societySheet.Cell(1, 6).Value = "Tenant Contact number";
 
-            societySheet.Cell(2, 4).Value = "Owner";
-            societySheet.Cell(2, 5).Value = "Tenant";
+            societySheet.Cell(2, 3).Value = "Owner";
+            societySheet.Cell(2, 4).Value = "Tenant";
 
-            societySheet.Cell(3, 1).Value = 1;
-            societySheet.Cell(3, 2).Value = "Jane Doe";
-            societySheet.Cell(3, 3).Value = "101";
-            societySheet.Cell(3, 4).Value = "Owner";
-            societySheet.Cell(3, 5).Value = "";
-            societySheet.Cell(3, 6).Value = "9876543210";
-            societySheet.Cell(3, 7).Value = "";
+            societySheet.Cell(3, 1).Value = "Jane Doe";
+            societySheet.Cell(3, 2).Value = "101";
+            societySheet.Cell(3, 3).Value = "Owner";
+            societySheet.Cell(3, 4).Value = "";
+            societySheet.Cell(3, 5).Value = "9876543210";
+            societySheet.Cell(3, 6).Value = "";
 
-            societySheet.Cell(4, 1).Value = 2;
-            societySheet.Cell(4, 2).Value = "John Tenant";
-            societySheet.Cell(4, 3).Value = "102";
-            societySheet.Cell(4, 4).Value = "";
-            societySheet.Cell(4, 5).Value = "Tenant";
-            societySheet.Cell(4, 6).Value = "9123456789";
-            societySheet.Cell(4, 7).Value = "9876543211 / 9876543212";
+            societySheet.Cell(4, 1).Value = "John Tenant";
+            societySheet.Cell(4, 2).Value = "102";
+            societySheet.Cell(4, 3).Value = "";
+            societySheet.Cell(4, 4).Value = "Tenant";
+            societySheet.Cell(4, 5).Value = "9123456789";
+            societySheet.Cell(4, 6).Value = "9876543211 / 9876543212";
 
             societySheet.Columns().AdjustToContents();
 
@@ -104,30 +101,90 @@ namespace ApartmentManagementSystem.Services
                 return await ImportSocietyFormatAsync(sheet);
             }
 
-            return await ImportTemplateFormatAsync(sheet);
+            var templateResult = await ImportTemplateFormatAsync(sheet);
+            templateResult.SheetName = sheet.Name;
+            return templateResult;
         }
 
         private static IXLWorksheet SelectImportWorksheet(XLWorkbook workbook)
         {
-            var societyFormat = workbook.Worksheets.FirstOrDefault(w =>
-                w.Name.Equals("SocietyFormat", StringComparison.OrdinalIgnoreCase));
-            if (societyFormat != null)
-            {
-                return societyFormat;
-            }
+            IXLWorksheet? bestSocietySheet = null;
+            var bestSocietyDataRows = 0;
 
             foreach (var worksheet in workbook.Worksheets)
             {
-                var map = DetectSocietyColumns(worksheet);
-                if (IsValidSocietyColumnMap(map))
+                if (HasTemplateFormatHeaders(worksheet) && !WorksheetLooksLikeUserSocietyData(worksheet))
                 {
-                    return worksheet;
+                    continue;
+                }
+
+                if (!IsSocietyFormat(worksheet))
+                {
+                    continue;
+                }
+
+                var lastRow = GetLastDataRow(worksheet);
+                var map = ResolveColumnMap(worksheet, lastRow);
+                if (map == null || !IsValidSocietyColumnMap(map))
+                {
+                    continue;
+                }
+
+                var dataRows = CountLikelySocietyDataRows(worksheet, lastRow, map);
+                if (dataRows > bestSocietyDataRows)
+                {
+                    bestSocietyDataRows = dataRows;
+                    bestSocietySheet = worksheet;
                 }
             }
 
+            if (bestSocietySheet != null && bestSocietyDataRows > 0)
+            {
+                return bestSocietySheet;
+            }
+
+            var templateSheet = workbook.Worksheets.FirstOrDefault(w =>
+                HasTemplateFormatHeaders(w));
+            if (templateSheet != null)
+            {
+                return templateSheet;
+            }
+
             return workbook.Worksheets
-                .OrderByDescending(w => w.LastRowUsed()?.RowNumber() ?? 0)
+                .OrderByDescending(w => GetLastDataRow(w, DetectSocietyColumns(w)))
                 .First();
+        }
+
+        private static bool HasTemplateFormatHeaders(IXLWorksheet sheet)
+        {
+            var row1 = string.Join("|", Enumerable.Range(1, 6).Select(c => GetCellText(sheet, 1, c)));
+            return row1.Contains("FlatNumber", StringComparison.OrdinalIgnoreCase) &&
+                   row1.Contains("ResidentName", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CountLikelySocietyDataRows(IXLWorksheet sheet, int lastRow, SocietyColumnMap map)
+        {
+            var start = FindSocietyDataStartRow(sheet, lastRow, map);
+            var count = 0;
+
+            for (var row = start; row <= lastRow; row++)
+            {
+                if (IsSocietySubHeaderRow(sheet, row, map))
+                {
+                    continue;
+                }
+
+                var name = map.NameCol > 0 ? GetCellText(sheet, row, map.NameCol) : string.Empty;
+                var flat = map.FlatCol > 0 ? GetCellText(sheet, row, map.FlatCol) : string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(flat) &&
+                    !IsRepeatedHeaderRow(name, flat))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static bool IsValidSocietyColumnMap(SocietyColumnMap? map) =>
@@ -137,7 +194,7 @@ namespace ApartmentManagementSystem.Services
         {
             var result = new ResidentImportResult();
             var existingResidents = await _context.Residents.ToListAsync();
-            var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
+            var lastRow = GetLastDataRow(sheet);
 
             for (var rowNumber = 2; rowNumber <= lastRow; rowNumber++)
             {
@@ -173,11 +230,10 @@ namespace ApartmentManagementSystem.Services
 
         private async Task<ResidentImportResult> ImportSocietyFormatAsync(IXLWorksheet sheet)
         {
-            var result = new ResidentImportResult();
+            var result = new ResidentImportResult { SheetName = sheet.Name };
             var existingResidents = await _context.Residents.ToListAsync();
-            var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
-
-            var columnMap = DetectSocietyColumns(sheet);
+            var lastRow = GetLastDataRow(sheet);
+            var columnMap = ResolveColumnMap(sheet, lastRow);
             if (columnMap == null)
             {
                 result.SkippedCount = 1;
@@ -185,18 +241,25 @@ namespace ApartmentManagementSystem.Services
                 {
                     RowNumber = 1,
                     Status = "Skipped",
-                    Message = "Could not detect society format column headers (Name, Flat No, Owner/Tenant)."
+                    Message = "Could not detect columns. Use: Name | Flat No | Owner/Tenant | contact numbers (data from row 3)."
                 });
                 return result;
             }
+
+            result.DiagnosticMessage =
+                $"Sheet '{sheet.Name}': rows 1–{lastRow}. Columns — Name={columnMap.NameCol}, Flat={columnMap.FlatCol}, " +
+                $"Owner={columnMap.OwnerCol}, Tenant={columnMap.TenantCol}, OwnerContact={columnMap.OwnerContactCol}, TenantContact={columnMap.TenantContactCol}.";
 
             var startRow = FindSocietyDataStartRow(sheet, lastRow, columnMap);
             TryMapTypeSubHeaders(sheet, columnMap.HeaderRow + 1, sheet.LastColumnUsed()?.ColumnNumber() ?? 10, columnMap, overwrite: true);
 
             for (var rowNumber = startRow; rowNumber <= lastRow; rowNumber++)
             {
+                result.TotalRowsProcessed++;
+
                 if (IsSocietySubHeaderRow(sheet, rowNumber, columnMap))
                 {
+                    RecordSkippedRow(result, rowNumber, string.Empty, string.Empty, "Header/sub-header row (skipped).");
                     continue;
                 }
 
@@ -219,6 +282,7 @@ namespace ApartmentManagementSystem.Services
 
                 if (IsRepeatedHeaderRow(residentName, flatNumber))
                 {
+                    RecordSkippedRow(result, rowNumber, flatNumber, residentName, "Repeated header text (skipped).");
                     continue;
                 }
 
@@ -251,11 +315,6 @@ namespace ApartmentManagementSystem.Services
                         result.SkippedCount++;
                     }
 
-                    continue;
-                }
-
-                if (ShouldSkipMisplacedSerialRow(sheet, rowNumber, columnMap, flatNumber))
-                {
                     continue;
                 }
 
@@ -344,6 +403,8 @@ namespace ApartmentManagementSystem.Services
             public int TenantCol { get; set; }
             public int OwnerContactCol { get; set; }
             public int TenantContactCol { get; set; }
+            /// <summary>Single column with Owner/Tenant text (no separate Owner/Tenant sub-columns).</summary>
+            public int SingleTypeCol { get; set; }
         }
 
         private static SocietyColumnMap? DetectSocietyColumns(IXLWorksheet sheet)
@@ -411,6 +472,11 @@ namespace ApartmentManagementSystem.Services
                 }
                 else if (IsResidentTypeHeader(text))
                 {
+                    if (map.SingleTypeCol == 0)
+                    {
+                        map.SingleTypeCol = col;
+                    }
+
                     if (map.OwnerCol == 0)
                     {
                         map.OwnerCol = col;
@@ -553,6 +619,26 @@ namespace ApartmentManagementSystem.Services
             string ownerContact,
             string tenantContact)
         {
+            if (map.SingleTypeCol > 0)
+            {
+                var single = GetCellText(sheet, row, map.SingleTypeCol);
+                if (CellIndicatesTenant(single))
+                {
+                    return false;
+                }
+
+                if (CellIndicatesOwner(single))
+                {
+                    return true;
+                }
+
+                var parsed = ParseResidentType(single);
+                if (parsed != null)
+                {
+                    return parsed;
+                }
+            }
+
             if (CellIndicatesTenant(tenantMarker))
             {
                 return false;
@@ -652,7 +738,34 @@ namespace ApartmentManagementSystem.Services
                 }
             }
 
-            return InferTypeFromContacts(ownerContact, tenantContact);
+            var inferred = InferTypeFromContacts(ownerContact, tenantContact);
+            if (inferred != null)
+            {
+                return inferred;
+            }
+
+            if (map.SingleTypeCol > 0)
+            {
+                var single = GetCellText(sheet, row, map.SingleTypeCol);
+                if (CellIndicatesTenant(single))
+                {
+                    return false;
+                }
+
+                if (CellIndicatesOwner(single))
+                {
+                    return true;
+                }
+
+                var parsedSingle = ParseResidentType(single);
+                if (parsedSingle != null)
+                {
+                    return parsedSingle;
+                }
+            }
+
+            // Society sheets often leave type columns blank — default to Owner so rows are not dropped.
+            return true;
         }
 
         private static bool TypeColumnsBlank(
@@ -856,6 +969,16 @@ namespace ApartmentManagementSystem.Services
                 return true;
             }
 
+            if (trimmed.Contains('+') || trimmed.Contains('/'))
+            {
+                var segment = trimmed.Split('+', '/')[0].Trim();
+                if (FlatNumberPattern.IsMatch(segment) ||
+                    (segment.All(c => char.IsDigit(c) || c == '-' || c == ' ') && segment.Any(char.IsDigit)))
+                {
+                    return true;
+                }
+            }
+
             return trimmed.All(c => char.IsDigit(c) || c == '-' || c == ' ') &&
                    trimmed.Any(char.IsDigit);
         }
@@ -893,7 +1016,7 @@ namespace ApartmentManagementSystem.Services
 
         private static bool IsNameHeader(string text) =>
             !IsSerialHeader(text) &&
-            (text is "name" or "resident name" or "member name");
+            (text is "name" or "resident name" or "member name" or "owner name" or "tenant name");
 
         private static bool IsFlatHeader(string text) =>
             text.Contains("flat") ||
@@ -939,7 +1062,8 @@ namespace ApartmentManagementSystem.Services
             var rowResult = new ResidentImportRowResult
             {
                 RowNumber = rowNumber,
-                FlatNumber = flatNumber
+                FlatNumber = flatNumber,
+                ResidentName = residentName?.Trim() ?? string.Empty
             };
 
             if (string.IsNullOrWhiteSpace(flatNumber))
@@ -970,18 +1094,9 @@ namespace ApartmentManagementSystem.Services
                 return;
             }
 
-            if (!isOwner.Value && !HasTenantOwnerInfo(propertyOwnerName, ownerContactNumber))
-            {
-                rowResult.Status = "Skipped";
-                rowResult.Message = "Tenants require property owner name or owner contact number.";
-                result.Rows.Add(rowResult);
-                result.SkippedCount++;
-                return;
-            }
-
             flatNumber = flatNumber.Trim();
 
-            if (IsDuplicate(existingResidents, flatNumber, email))
+            if (IsDuplicate(existingResidents, flatNumber, residentName, isOwner.Value, email))
             {
                 rowResult.Status = "Skipped";
                 rowResult.Message = "Duplicate resident for this flat.";
@@ -995,14 +1110,17 @@ namespace ApartmentManagementSystem.Services
                 FlatNumber = flatNumber,
                 OwnerName = residentName.Trim(),
                 Email = email?.Trim() ?? string.Empty,
-                PhoneNumber = phone?.Trim() ?? string.Empty,
+                PhoneNumber = TruncatePhone(phone),
+                OwnerContactNumber = isOwner.Value
+                    ? null
+                    : NullIfWhiteSpace(TruncatePhone(ownerContactNumber)),
                 IsOwner = isOwner.Value,
+                MemberType = isOwner.Value
+                    ? ResidentMemberType.Owner
+                    : ResidentMemberType.Tenant,
                 PropertyOwnerName = isOwner.Value
                     ? null
                     : string.IsNullOrWhiteSpace(propertyOwnerName) ? null : propertyOwnerName.Trim(),
-                OwnerContactNumber = isOwner.Value
-                    ? null
-                    : ownerContactNumber?.Trim(),
                 CreatedDate = DateTime.Now
             };
 
@@ -1017,15 +1135,30 @@ namespace ApartmentManagementSystem.Services
 
         private async Task SaveImportResultAsync(ResidentImportResult result)
         {
-            if (result.AddedCount > 0)
+            if (result.AddedCount <= 0)
+            {
+                return;
+            }
+
+            try
             {
                 await _context.SaveChangesAsync();
                 await _billingService.EnsureMonthlyMaintenanceForAllResidentsAsync();
+            }
+            catch (Exception ex)
+            {
+                result.DiagnosticMessage += $" Database save failed: {ex.Message}";
+                throw;
             }
         }
 
         private static bool IsSocietyFormat(IXLWorksheet sheet)
         {
+            if (HasTemplateFormatHeaders(sheet))
+            {
+                return false;
+            }
+
             var lastCol = sheet.LastColumnUsed()?.ColumnNumber() ?? 10;
 
             for (var row = 1; row <= 8; row++)
@@ -1045,7 +1178,207 @@ namespace ApartmentManagementSystem.Services
                 }
             }
 
-            return false;
+            return InferColumnsFromData(sheet, GetLastDataRow(sheet)) != null;
+        }
+
+        private static bool WorksheetLooksLikeUserSocietyData(IXLWorksheet sheet)
+        {
+            var lastRow = GetLastDataRow(sheet);
+            var map = InferColumnsFromData(sheet, lastRow);
+            return map != null && CountLikelySocietyDataRows(sheet, lastRow, map) >= 5;
+        }
+
+        private static SocietyColumnMap? ResolveColumnMap(IXLWorksheet sheet, int lastRow)
+        {
+            var headerMap = DetectSocietyColumns(sheet);
+            var dataMap = InferColumnsFromData(sheet, lastRow);
+
+            if (headerMap == null)
+            {
+                return dataMap;
+            }
+
+            if (dataMap == null)
+            {
+                return headerMap;
+            }
+
+            var headerScore = ScoreMapAgainstData(sheet, headerMap, lastRow);
+            var dataScore = ScoreMapAgainstData(sheet, dataMap, lastRow);
+            return dataScore >= headerScore ? dataMap : headerMap;
+        }
+
+        private static int ScoreMapAgainstData(IXLWorksheet sheet, SocietyColumnMap map, int lastRow)
+        {
+            var start = Math.Max(map.HeaderRow + 1, 1);
+            var score = 0;
+
+            for (var row = start; row <= Math.Min(lastRow, start + 40); row++)
+            {
+                if (IsSocietySubHeaderRow(sheet, row, map))
+                {
+                    continue;
+                }
+
+                var name = GetCellText(sheet, row, map.NameCol);
+                var flat = GetCellText(sheet, row, map.FlatCol);
+
+                if (LooksLikeName(name) && LooksLikeFlatNumber(flat))
+                {
+                    score += 3;
+                }
+                else if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(flat) &&
+                         !IsRepeatedHeaderRow(name, flat))
+                {
+                    score += 1;
+                }
+            }
+
+            return score;
+        }
+
+        private static SocietyColumnMap? InferColumnsFromData(IXLWorksheet sheet, int lastRow)
+        {
+            var lastCol = Math.Min(sheet.LastColumnUsed()?.ColumnNumber() ?? 12, 20);
+            var sampleStart = FindFirstLikelyDataRow(sheet, lastRow, lastCol);
+            var sampleEnd = Math.Min(lastRow, sampleStart + 40);
+
+            var flatScores = new int[lastCol + 1];
+            var nameScores = new int[lastCol + 1];
+            var ownerScores = new int[lastCol + 1];
+            var tenantScores = new int[lastCol + 1];
+            var phoneScores = new int[lastCol + 1];
+
+            for (var row = sampleStart; row <= sampleEnd; row++)
+            {
+                for (var col = 1; col <= lastCol; col++)
+                {
+                    var text = GetCellText(sheet, row, col);
+                    if (string.IsNullOrWhiteSpace(text) || IsRepeatedHeaderRow(text, text))
+                    {
+                        continue;
+                    }
+
+                    if (LooksLikeFlatNumber(text))
+                    {
+                        flatScores[col]++;
+                    }
+                    else if (LooksLikeName(text))
+                    {
+                        nameScores[col]++;
+                    }
+                    else if (CellIndicatesOwner(text))
+                    {
+                        ownerScores[col]++;
+                    }
+                    else if (CellIndicatesTenant(text))
+                    {
+                        tenantScores[col]++;
+                    }
+                    else if (HasPhoneDigits(text))
+                    {
+                        phoneScores[col]++;
+                    }
+                }
+            }
+
+            var flatCol = ArgMaxScore(flatScores, minScore: 2);
+            var nameCol = ArgMaxScore(nameScores, minScore: 2, excludeCol: flatCol);
+            if (flatCol <= 0 || nameCol <= 0)
+            {
+                return null;
+            }
+
+            var map = new SocietyColumnMap
+            {
+                HeaderRow = Math.Max(1, sampleStart - 2),
+                NameCol = nameCol,
+                FlatCol = flatCol,
+                OwnerCol = ArgMaxScore(ownerScores, minScore: 1),
+                TenantCol = ArgMaxScore(tenantScores, minScore: 1, excludeCol: ArgMaxScore(ownerScores, minScore: 1))
+            };
+
+            if (map.TenantCol == map.OwnerCol)
+            {
+                map.TenantCol = map.OwnerCol > 0 ? map.OwnerCol + 1 : 0;
+            }
+
+            var phoneCols = Enumerable.Range(1, lastCol)
+                .Where(c => c != nameCol && c != flatCol && c != map.OwnerCol && c != map.TenantCol)
+                .Select(c => (Col: c, Score: phoneScores[c]))
+                .Where(x => x.Score >= 2)
+                .OrderByDescending(x => x.Score)
+                .ToList();
+
+            if (phoneCols.Count > 0)
+            {
+                map.OwnerContactCol = phoneCols[0].Col;
+            }
+
+            if (phoneCols.Count > 1)
+            {
+                map.TenantContactCol = phoneCols[1].Col;
+            }
+
+            return map;
+        }
+
+        private static int FindFirstLikelyDataRow(IXLWorksheet sheet, int lastRow, int lastCol)
+        {
+            for (var row = 1; row <= Math.Min(20, lastRow); row++)
+            {
+                for (var col = 1; col < lastCol; col++)
+                {
+                    var a = GetCellText(sheet, row, col);
+                    var b = GetCellText(sheet, row, col + 1);
+                    if (LooksLikeName(a) && LooksLikeFlatNumber(b))
+                    {
+                        return row;
+                    }
+                }
+            }
+
+            return 3;
+        }
+
+        private static int ArgMaxScore(int[] scores, int minScore, int excludeCol = 0)
+        {
+            var bestCol = 0;
+            var bestScore = minScore - 1;
+
+            for (var col = 1; col < scores.Length; col++)
+            {
+                if (col == excludeCol)
+                {
+                    continue;
+                }
+
+                if (scores[col] > bestScore)
+                {
+                    bestScore = scores[col];
+                    bestCol = col;
+                }
+            }
+
+            return bestScore >= minScore ? bestCol : 0;
+        }
+
+        private static void RecordSkippedRow(
+            ResidentImportResult result,
+            int rowNumber,
+            string flat,
+            string name,
+            string message)
+        {
+            result.Rows.Add(new ResidentImportRowResult
+            {
+                RowNumber = rowNumber,
+                FlatNumber = flat,
+                ResidentName = name,
+                Status = "Skipped",
+                Message = message
+            });
+            result.SkippedCount++;
         }
 
         private static string ExtractFirstPhone(string? raw)
@@ -1089,13 +1422,26 @@ namespace ApartmentManagementSystem.Services
         private static bool IsDuplicate(
             List<Resident> existingResidents,
             string flatNumber,
+            string residentName,
+            bool isOwner,
             string? email)
         {
+            var normalizedName = residentName.Trim();
             var normalizedEmail = NormalizeEmail(email);
 
             return existingResidents.Any(r =>
             {
                 if (!FlatNumberHelper.Match(r.FlatNumber, flatNumber))
+                {
+                    return false;
+                }
+
+                if (!r.OwnerName.Trim().Equals(normalizedName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                if (r.IsOwner != isOwner)
                 {
                     return false;
                 }
@@ -1107,9 +1453,55 @@ namespace ApartmentManagementSystem.Services
                     return existingEmail == normalizedEmail;
                 }
 
-                return string.IsNullOrEmpty(normalizedEmail) &&
-                       string.IsNullOrEmpty(existingEmail);
+                return true;
             });
+        }
+
+        private static int GetLastDataRow(IXLWorksheet sheet, SocietyColumnMap? map = null)
+        {
+            var usedLast = sheet.LastRowUsed()?.RowNumber() ?? 0;
+            var maxScan = Math.Max(usedLast + 100, 2000);
+            var consecutiveEmpty = 0;
+            var lastDataRow = Math.Max(usedLast, map?.HeaderRow ?? 1);
+
+            for (var row = 1; row <= maxScan; row++)
+            {
+                if (!HasDataInImportRow(sheet, row, map))
+                {
+                    consecutiveEmpty++;
+                    if (consecutiveEmpty >= 25 && row > lastDataRow + 25)
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+
+                consecutiveEmpty = 0;
+                lastDataRow = row;
+            }
+
+            return lastDataRow;
+        }
+
+        private static bool HasDataInImportRow(IXLWorksheet sheet, int row, SocietyColumnMap? map)
+        {
+            if (map != null && map.NameCol > 0 && map.FlatCol > 0)
+            {
+                var name = GetCellText(sheet, row, map.NameCol);
+                var flat = GetCellText(sheet, row, map.FlatCol);
+                return !string.IsNullOrWhiteSpace(name) || !string.IsNullOrWhiteSpace(flat);
+            }
+
+            for (var col = 1; col <= 12; col++)
+            {
+                if (!string.IsNullOrWhiteSpace(GetCellText(sheet, row, col)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string? NormalizeEmail(string? email)
@@ -1122,6 +1514,12 @@ namespace ApartmentManagementSystem.Services
         private static string GetCellText(IXLWorksheet sheet, int row, int column)
         {
             var cell = sheet.Cell(row, column);
+            if (cell.IsMerged())
+            {
+                var merged = cell.MergedRange();
+                cell = sheet.Cell(merged.FirstRow().RowNumber(), merged.FirstColumn().ColumnNumber());
+            }
+
             if (cell.IsEmpty())
             {
                 return string.Empty;
@@ -1145,6 +1543,20 @@ namespace ApartmentManagementSystem.Services
             }
 
             return cell.GetString().Trim();
+        }
+
+        private static string? NullIfWhiteSpace(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value;
+
+        private static string TruncatePhone(string? phone, int maxLength = 40)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                return string.Empty;
+            }
+
+            var trimmed = phone.Trim();
+            return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength];
         }
 
         private static bool IsRowEmpty(params string?[] values)

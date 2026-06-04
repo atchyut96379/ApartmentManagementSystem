@@ -20,7 +20,7 @@ namespace ApartmentManagementSystem.Services
 
             var totalCollected = _context.Maintenances
                 .Where(m => m.PaymentStatus)
-                .Sum(m => (decimal?)m.Amount) ?? 0;
+                .Sum(m => (decimal?)(m.TotalPaidAmount > 0 ? m.TotalPaidAmount : m.Amount)) ?? 0;
 
             var model = new DashboardViewModel
             {
@@ -29,15 +29,19 @@ namespace ApartmentManagementSystem.Services
                     .Select(r => r.FlatNumber)
                     .Distinct()
                     .Count(),
-                TotalOwners = _context.Residents.Count(r => r.IsOwner),
-                TotalTenants = _context.Residents.Count(r => !r.IsOwner),
+                TotalOwners = _context.Residents.Count(r =>
+                    r.MemberType == ResidentMemberType.Owner),
+                TotalTenants = _context.Residents.Count(r =>
+                    r.MemberType == ResidentMemberType.Tenant),
+                TotalAssociationAdmins = _context.Residents.Count(r =>
+                    r.MemberType == ResidentMemberType.AssociationAdmin),
                 TotalCollected = totalCollected,
                 CurrentMonthCollection = _context.Maintenances
                     .Where(m =>
                         m.PaymentStatus &&
                         m.Year == currentYear &&
                         m.Month == currentMonth)
-                    .Sum(m => (decimal?)m.Amount) ?? 0,
+                    .Sum(m => (decimal?)(m.TotalPaidAmount > 0 ? m.TotalPaidAmount : m.Amount)) ?? 0,
                 TotalExpenses = _context.Expenses
                     .Sum(e => (decimal?)e.Amount) ?? 0,
                 PendingPayments = _context.Maintenances
@@ -55,6 +59,22 @@ namespace ApartmentManagementSystem.Services
                 .Where(m => !m.PaymentStatus)
                 .OrderBy(m => m.FlatNumber)
                 .ThenByDescending(m => m.Year)
+                .ToListAsync();
+        }
+
+        public async Task<List<AssociationMemberViewModel>> GetAssociationCommitteeAsync()
+        {
+            return await _context.Residents
+                .Where(r => r.MemberType == ResidentMemberType.AssociationAdmin)
+                .OrderBy(r => r.AssociationDesignation)
+                .Select(r => new AssociationMemberViewModel
+                {
+                    FlatNumber = r.FlatNumber,
+                    Name = r.OwnerName,
+                    Designation = r.AssociationDesignation ?? "",
+                    PhoneNumber = r.PhoneNumber,
+                    Email = r.Email
+                })
                 .ToListAsync();
         }
 

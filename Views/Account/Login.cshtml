@@ -1,72 +1,85 @@
-﻿@{
-    ViewData["Title"] = "Login";
-}
-
-<div class="container mt-4">
-
-    <div class="row justify-content-center">
-
-        <div class="col-md-5">
-
-            <div class="card shadow p-4">
-
-                <h2 class="mb-4 text-center">
-                    Login
-                </h2>
-
-                @if (TempData["Success"] != null)
-                {
-                    <div class="alert alert-success">
-                        @TempData["Success"]
-                    </div>
-                }
-
-                @if (ViewBag.Error != null)
-                {
-                    <div class="alert alert-danger">
-                        @ViewBag.Error
-                    </div>
-                }
-
-                <form method="post">
-
-                    <div class="form-group mb-3">
-                        <label>Email</label>
-
-                        <input type="email"
-                               name="email"
-                               class="form-control"
-                               value="@ViewBag.PrefillEmail"
-                               required />
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label>Password</label>
-
-                        <input type="password"
-                               name="password"
-                               class="form-control"
-                               required />
-                    </div>
-
-                    <button type="submit"
-                            class="btn btn-success w-100">
-                        Login
-                    </button>
-
-                </form>
-
-                <hr />
-
-                <div class="text-center text-muted small">
-                    <p class="mb-1">Residents: use the email and temporary password from your society admin.</p>
-                    <p class="mb-0">Forgot password? Contact the admin to reset it from the Residents page.</p>
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
+﻿@{
+    ViewData["Title"] = "Login";
+    Layout = "~/Views/Shared/_LayoutLogin.cshtml";
+}
+
+<div class="container mt-4">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-5">
+
+            <div class="card shadow p-4">
+
+                <h2 class="mb-4 text-center">
+                    Login
+                </h2>
+
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success">
+                        @TempData["Success"]
+                    </div>
+                }
+
+                @if (ViewBag.Error != null)
+                {
+                    <div class="alert alert-danger">
+                        @ViewBag.Error
+                    </div>
+                }
+
+                <form method="post">
+
+                    <div class="form-group mb-3">
+                        <label for="loginId">Mobile number</label>
+
+                        <input type="text"
+                               id="loginId"
+                               name="mobile"
+                               class="form-control"
+                               value="@ViewBag.PrefillMobile"
+                               autocomplete="username"
+                               placeholder="10-digit mobile (system Admin: Admin)"
+                               required />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label>Password</label>
+
+                        <input type="password"
+                               name="password"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-success w-100">
+                        Login
+                    </button>
+
+                </form>
+
+                <hr />
+
+                <div class="text-center text-muted small">
+                    <p class="mb-2">
+                        <strong>System administrator:</strong> username <code>Admin</code> / password <code>Admin</code>.
+                    </p>
+                    <p class="mb-2">
+                        <strong>Committee & residents:</strong> use your <strong>mobile number</strong> and
+                        temporary password from the admin (e.g. Marv507). On first login you must choose a new password.
+                    </p>
+                    <p class="mb-0">
+                        <a asp-controller="Account" asp-action="ForgotPassword">Forgot password?</a>
+                        — enter mobile number and flat number to set a new password (no OTP).
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

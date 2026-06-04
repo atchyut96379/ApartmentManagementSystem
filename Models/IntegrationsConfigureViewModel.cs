@@ -1,0 +1,64 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace ApartmentManagementSystem.Models
+{
+    public class IntegrationsConfigureViewModel
+    {
+        public IntegrationStatusViewModel Status { get; set; } = new();
+
+        public string ConfigFilePath { get; set; } = string.Empty;
+
+        public bool ConfigFileExists { get; set; }
+
+        [Display(Name = "Enable email")]
+        public bool EnableEmail { get; set; }
+
+        public string SmtpHost { get; set; } = "smtp.gmail.com";
+
+        public int SmtpPort { get; set; } = 587;
+
+        public bool SmtpUseSsl { get; set; } = true;
+
+        public string? SmtpUser { get; set; }
+
+        [Display(Name = "SMTP password (app password)")]
+        public string? SmtpPassword { get; set; }
+
+        public string FromEmail { get; set; } = string.Empty;
+
+        public string FromName { get; set; } = "Apartment Management";
+
+        [Display(Name = "Enable SMS")]
+        public bool EnableSms { get; set; }
+
+        public string SmsProvider { get; set; } = "Msg91";
+
+        public string? TwilioAccountSid { get; set; }
+
+        public string? TwilioAuthToken { get; set; }
+
+        public string? TwilioFromNumber { get; set; }
+
+        public string? Msg91AuthKey { get; set; }
+
+        public string? Msg91SenderId { get; set; }
+
+        public string PaymentProvider { get; set; } = "Simulation";
+
+        public string? RazorpayKeyId { get; set; }
+
+        public string? RazorpayKeySecret { get; set; }
+
+        public string? RazorpayWebhookSecret { get; set; }
+
+        public string AppUrl { get; set; } = string.Empty;
+
+        public bool PasswordOnFile { get; set; }
+
+        public bool RazorpaySecretOnFile { get; set; }
+
+        public bool TwilioTokenOnFile { get; set; }
+
+        public bool Msg91KeyOnFile { get; set; }
+    }
+}

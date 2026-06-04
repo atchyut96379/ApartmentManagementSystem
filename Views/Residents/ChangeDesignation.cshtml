@@ -1,0 +1,112 @@
+@model ApartmentManagementSystem.Models.ChangeCommitteeDesignationViewModel
+
+@{
+    ViewData["Title"] = "Change committee role";
+}
+
+<h1>Change committee role</h1>
+
+<p class="text-muted">
+    Flat <strong>@Model.FlatNumber</strong> — @Model.ResidentName<br />
+    Current: <strong>@Model.CurrentRoleLabel</strong>
+    @if (!Model.HasLogin)
+    {
+        <span class="text-danger">(no login yet — create login before assigning a committee role)</span>
+    }
+</p>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card shadow mb-3">
+            <div class="card-body">
+                <form asp-action="ChangeDesignation" method="post">
+                    <input type="hidden" asp-for="ResidentId" />
+                    <div asp-validation-summary="All" class="text-danger"></div>
+
+                    @if (Model.IsCommitteeMember)
+                    {
+                        <div class="form-check mb-3">
+                            <input asp-for="RemoveCommitteeRole" class="form-check-input" id="removeRole" />
+                            <label class="form-check-label" for="removeRole">
+                                @Html.DisplayNameFor(m => m.RemoveCommitteeRole)
+                            </label>
+                        </div>
+                    }
+
+                    <div id="assignRoleGroup">
+                        <div class="mb-3">
+                            <label asp-for="NewDesignation" class="form-label"></label>
+                            @if (Model.AvailableDesignations.Any())
+                            {
+                                <select asp-for="NewDesignation" class="form-select">
+                                    <option value="">— Select role —</option>
+                                    @foreach (var d in Model.AvailableDesignations)
+                                    {
+                                        <option value="@d">@d</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <p class="text-danger small mb-0">All five committee roles are assigned to others.</p>
+                            }
+                            <span asp-validation-for="NewDesignation" class="text-danger"></span>
+                            <div class="form-text">
+                                Example: change an Owner with login to Vice President, or move someone from one committee post to another.
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary"
+                            @(Model.HasLogin || Model.IsCommitteeMember ? "" : "disabled")>
+                        Save role
+                    </button>
+                    <a asp-action="Index" class="btn btn-link">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header">Committee roster</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var row in Model.CurrentAssignments)
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@row.Designation</span>
+                        @if (row.IsVacant)
+                        {
+                            <span class="badge bg-secondary">Vacant</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">@row.AssignedTo</span>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+        <p class="text-muted small mt-2 mb-0">
+            Only <strong>President</strong> and <strong>Secretary</strong> can change roles from this screen.
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var remove = document.getElementById('removeRole');
+            var assign = document.getElementById('assignRoleGroup');
+            if (!remove || !assign) return;
+
+            function toggle() {
+                assign.style.display = remove.checked ? 'none' : 'block';
+            }
+
+            remove.addEventListener('change', toggle);
+            toggle();
+        })();
+    </script>
+}

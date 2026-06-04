@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Create resident login";
+    var hasCommitteeSlots = Model.AvailableDesignations.Count > 0;
 }
 
 <h1>Create resident login</h1>
@@ -10,7 +11,16 @@
     Flat <strong>@Model.FlatNumber</strong> — @Model.ResidentName
 </p>
 
-<div class="card shadow col-md-6">
+@if (ViewBag.RepairingLegacyLogin == true)
+{
+    <div class="alert alert-warning">
+        An older login account was found for this person (from before mobile-number login).
+        Submit this form to link it to their mobile number and reset the temporary password.
+        Email is optional.
+    </div>
+}
+
+<div class="card shadow col-md-7">
     <div class="card-body">
         <form asp-action="CreateLogin" method="post">
             <input type="hidden" asp-for="ResidentId" />
@@ -20,18 +30,66 @@
             <div asp-validation-summary="All" class="text-danger"></div>
 
             <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-                <div class="form-text">This email is the username for login.</div>
+                <label asp-for="PhoneNumber" class="form-label"></label>
+                <input asp-for="PhoneNumber" class="form-control" />
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                <div class="form-text">This mobile number is the username for login (10+ digits).</div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="NotificationEmail" class="form-label"></label>
+                <input asp-for="NotificationEmail" class="form-control" type="email" />
+                <span asp-validation-for="NotificationEmail" class="text-danger"></span>
+            </div>
+
+            <div class="card border-warning mb-3">
+                <div class="card-body">
+                    <div class="form-check">
+                        <input asp-for="GrantCommitteeAdminAccess" class="form-check-input" id="grantCommittee" />
+                        <label class="form-check-label" for="grantCommittee">
+                            <strong>@Html.DisplayNameFor(m => m.GrantCommitteeAdminAccess)</strong>
+                        </label>
+                    </div>
+                    <p class="text-muted small mb-2 mt-2">
+                        Committee members can add residents, import Excel, and send payment reminders (same as President / Secretary).
+                        Only five roles exist; each role can be assigned once.
+                    </p>
+
+                    <div id="committeeRoleGroup" class="@(Model.GrantCommitteeAdminAccess ? "" : "d-none")">
+                        <label asp-for="AssociationDesignation" class="form-label"></label>
+                        @if (hasCommitteeSlots)
+                        {
+                            <select asp-for="AssociationDesignation" class="form-select">
+                                <option value="">— Select committee role —</option>
+                                @foreach (var d in Model.AvailableDesignations)
+                                {
+                                    <option value="@d">@d</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <p class="text-danger small mb-0">
+                                All five committee roles are already assigned. Free a role from
+                                <a asp-controller="Committee" asp-action="Index">Committee accounts</a> first.
+                            </p>
+                        }
+                        <span asp-validation-for="AssociationDesignation" class="text-danger"></span>
+                    </div>
+                </div>
             </div>
 
             <p class="alert alert-info mb-3">
-                A temporary password will be generated. You will see it once on the next screen to share with the resident.
-                They must change it on first login.
+                Default password for this flat:
+                <strong><code>@ViewBag.DefaultPassword</code></strong>
+                (apartment prefix + up to 3 flat digits).
+                The resident must choose a new password on first login.
             </p>
 
-            <button type="submit" class="btn btn-primary">Create login</button>
+            <button type="submit" class="btn btn-primary"
+                    @(hasCommitteeSlots || !Model.GrantCommitteeAdminAccess ? "" : "disabled")>
+                Create login
+            </button>
             <a asp-action="Index" class="btn btn-link">Cancel</a>
         </form>
     </div>
@@ -39,4 +97,18 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var checkbox = document.getElementById('grantCommittee');
+            var roleGroup = document.getElementById('committeeRoleGroup');
+            if (!checkbox || !roleGroup) return;
+
+            function toggle() {
+                roleGroup.classList.toggle('d-none', !checkbox.checked);
+            }
+
+            checkbox.addEventListener('change', toggle);
+            toggle();
+        })();
+    </script>
 }

@@ -1,6 +1,42 @@
-﻿@{
+﻿@model ApartmentManagementSystem.Models.PublicSiteViewModel
+@{
     ViewData["Title"] = "Privacy Policy";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<h1>Privacy Policy</h1>
+<p class="text-muted">Last updated: @DateTime.UtcNow.ToString("MMMM yyyy")</p>
+
+<p>
+    @Model.ApartmentName (&quot;we&quot;, &quot;the society&quot;) operates this residents portal at
+    <strong>@Model.AppBaseUrl</strong> for maintenance billing and payments.
+</p>
+
+<h2 class="h5 mt-4">Information we collect</h2>
+<ul>
+    <li>Resident name, flat number, mobile number, and optional email for notifications</li>
+    <li>Maintenance payment records, transaction references, and receipts</li>
+    <li>Login credentials managed securely by the application (passwords are hashed, not stored in plain text)</li>
+</ul>
+
+<h2 class="h5 mt-4">How we use it</h2>
+<ul>
+    <li>To calculate and display maintenance dues, fines, and payment status</li>
+    <li>To process online payments through Razorpay (payment data is handled per Razorpay’s policies)</li>
+    <li>To send payment confirmations or reminders by email/SMS when enabled by the committee</li>
+</ul>
+
+<h2 class="h5 mt-4">Sharing</h2>
+<p>
+    We do not sell personal data. Payment details are shared only with the payment gateway (Razorpay) and
+    service providers required to send email/SMS, under their respective terms.
+</p>
+
+<h2 class="h5 mt-4">Security & retention</h2>
+<p>
+    Access is limited to authenticated residents and authorized committee administrators.
+    Records are retained as needed for society accounts and audit purposes.
+</p>
+
+<h2 class="h5 mt-4">Contact</h2>
+<p>See our <a asp-action="Contact">Contact</a> page for committee details.</p>

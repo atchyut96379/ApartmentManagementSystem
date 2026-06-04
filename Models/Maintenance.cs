@@ -31,5 +31,17 @@ namespace ApartmentManagementSystem.Models
         public string? ReceiptNumber { get; set; }
 
         public DateTime? PaidDate { get; set; }
+
+        public decimal FineAmount { get; set; }
+
+        public decimal TotalPaidAmount { get; set; }
+
+        public string? TransactionId { get; set; }
+
+        public string? PayerName { get; set; }
+
+        public string? PaymentGateway { get; set; }
+
+        public string? RazorpayOrderId { get; set; }
     }
 }

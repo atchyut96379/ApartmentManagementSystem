@@ -6,6 +6,8 @@
 
 <div class="container-fluid">
 
+    <div id="payment-live-banner" class="alert alert-info d-none mb-2" role="alert"></div>
+
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show">
@@ -22,6 +24,19 @@
         </div>
     }
 
+    @if (User.Identity?.Name?.Equals("Admin", StringComparison.OrdinalIgnoreCase) == true)
+    {
+        <div class="alert alert-primary d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <strong>Step 1 — Committee setup:</strong> assign President, Vice President, Secretary,
+                Joint Secretary, and Treasurer from your imported resident list. Only they can add residents.
+            </div>
+            <a asp-controller="Committee" asp-action="Index" class="btn btn-light text-primary fw-bold">
+                Assign committee from import
+            </a>
+        </div>
+    }
+
     @if (Model.ResidentPayments?.HasResidentProfile == true)
     {
         <partial name="_ResidentPaymentsCard" model="Model.ResidentPayments" />
@@ -35,8 +50,10 @@
         </div>
     }
 
-    @if (User.IsInRole("Admin"))
+    @if (User.IsInRole("Admin") || User.IsInRole("Resident"))
     {
+        <partial name="_DownloadExcelReport" />
+
         <div class="row">
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-info">
@@ -127,58 +144,17 @@
                         <p>Pending Payments</p>
                     </div>
                     <div class="icon"><i class="fas fa-clock"></i></div>
-                    <a href="/Maintenances" class="small-box-footer text-white">
-                        View maintenance <i class="fas fa-arrow-circle-right"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    }
-    else if (User.IsInRole("Resident") && Model.ResidentPayments != null && Model.ResidentPayments.HasResidentProfile)
-    {
-        <div class="row">
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
-                    <div class="inner">
-                        <h3>@Model.ResidentPayments.FlatNumber</h3>
-                        <p>Your flat</p>
-                    </div>
-                    <div class="icon"><i class="fas fa-building"></i></div>
-                </div>
-            </div>
-
-            <div class="col-lg-3 col-6">
-                <div class="small-box @(Model.ResidentPayments.PendingCount > 0 ? "bg-warning" : "bg-success")">
-                    <div class="inner">
-                        <h3>@Model.ResidentPayments.PendingCount</h3>
-                        <p>Your pending dues</p>
-                    </div>
-                    <div class="icon"><i class="fas fa-clock"></i></div>
-                    @if (Model.ResidentPayments.PendingCount > 0)
-                    {
-                        <a href="/ResidentPayments/MyPayments" class="small-box-footer text-white">
-                            Pay now <i class="fas fa-arrow-circle-right"></i>
-                        </a>
-                    }
-                </div>
-            </div>
-
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-success">
-                    <div class="inner">
-                        <h3>@Model.ResidentPayments.TotalAssignedCount</h3>
-                        <p>Your payment records</p>
-                    </div>
-                    <div class="icon"><i class="fas fa-receipt"></i></div>
-                    <a href="/ResidentPayments/MyPayments" class="small-box-footer text-white">
-                        View history <i class="fas fa-arrow-circle-right"></i>
+                    <a href="/Payments" class="small-box-footer text-white">
+                        Payment details <i class="fas fa-arrow-circle-right"></i>
                     </a>
                 </div>
             </div>
         </div>
     }
 
-    @if (User.IsInRole("Admin") && Model.PendingMaintenanceList.Any())
+    <partial name="_AssociationCommittee" model="Model.AssociationCommittee" />
+
+    @if ((User.IsInRole("Admin") || User.IsInRole("Resident")) && Model.PendingMaintenanceList.Any())
     {
         <div class="card shadow mt-3">
             <div class="card-header bg-warning">
@@ -213,3 +189,8 @@
     }
 
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script src="~/js/payment-realtime.js"></script>
+}

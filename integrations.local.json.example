@@ -1,0 +1,27 @@
+{
+  "Notification": {
+    "EnableEmail": true,
+    "SmtpHost": "smtp.gmail.com",
+    "SmtpPort": 587,
+    "SmtpUseSsl": true,
+    "SmtpUser": "your@gmail.com",
+    "SmtpPassword": "your-gmail-app-password",
+    "FromEmail": "your@gmail.com",
+    "FromName": "Marvel Rocks Apartment",
+    "EnableSms": true,
+    "SmsProvider": "Msg91",
+    "Msg91AuthKey": "your-msg91-authkey",
+    "Msg91SenderId": "SENDER"
+  },
+  "Payment": {
+    "Provider": "Razorpay",
+    "Razorpay": {
+      "KeyId": "rzp_test_xxxx",
+      "KeySecret": "your_razorpay_secret",
+      "WebhookSecret": "your_webhook_secret"
+    }
+  },
+  "Application": {
+    "AppUrl": "https://localhost:7119"
+  }
+}

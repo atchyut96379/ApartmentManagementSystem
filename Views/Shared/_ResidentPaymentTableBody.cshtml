@@ -15,8 +15,8 @@
             }
             @if (Model.Parent.ShowReceiptColumns && !Model.ShowPayNow)
             {
+                <th>Transaction ID</th>
                 <th>Receipt</th>
-                <th>Paid Date</th>
             }
         </tr>
     </thead>
@@ -41,23 +41,39 @@
                 @if (Model.ShowPayNow)
                 {
                     <td>
-                        <form asp-controller="ResidentPayments"
-                              asp-action="PayNow"
-                              method="post"
-                              class="d-inline"
-                              onsubmit="return confirm('Pay ₹@item.Amount.ToString("N2") for @item.Month @item.Year?');">
-                            <input type="hidden" name="id" value="@item.Id" />
-                            <input type="hidden" name="returnUrl" value="@Model.Parent.ReturnUrl" />
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="fas fa-credit-card me-1"></i> Pay Now
-                            </button>
-                        </form>
+                        <a asp-controller="ResidentPayments"
+                           asp-action="Checkout"
+                           asp-route-id="@item.Id"
+                           asp-route-returnUrl="@Model.Parent.ReturnUrl"
+                           class="btn btn-primary btn-sm">
+                            <i class="fas fa-credit-card me-1"></i> Pay Now
+                        </a>
                     </td>
                 }
                 @if (Model.Parent.ShowReceiptColumns && !Model.ShowPayNow)
                 {
-                    <td>@(item.ReceiptNumber ?? "-")</td>
-                    <td>@(item.PaidDate?.ToString("dd-MM-yyyy") ?? "-")</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(item.TransactionId))
+                        {
+                            <code class="small">@item.TransactionId</code>
+                        }
+                        else
+                        {
+                            @:—
+                        }
+                    </td>
+                    <td>
+                        @if (item.PaymentStatus && !string.IsNullOrEmpty(item.TransactionId))
+                        {
+                            <a asp-controller="ResidentPayments" asp-action="Receipt" asp-route-id="@item.Id">View</a>
+                            <span class="text-muted">|</span>
+                            <a asp-controller="ResidentPayments" asp-action="DownloadReceipt" asp-route-id="@item.Id">PDF</a>
+                        }
+                        else
+                        {
+                            @:—
+                        }
+                    </td>
                 }
             </tr>
         }

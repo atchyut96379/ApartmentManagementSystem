@@ -12,13 +12,20 @@ namespace ApartmentManagementSystem.Models
         [Required]
         public string OwnerName { get; set; }
 
+        [Display(Name = "Login mobile")]
         public string PhoneNumber { get; set; }
 
+        [Display(Name = "Notification email")]
         public string Email { get; set; }
 
         public string? UserId { get; set; }
 
         public bool IsOwner { get; set; }
+
+        public ResidentMemberType MemberType { get; set; } = ResidentMemberType.Owner;
+
+        /// <summary>Committee role when MemberType is AssociationAdmin (max 5 per society).</summary>
+        public string? AssociationDesignation { get; set; }
 
         /// <summary>Landlord name when the resident is a tenant (IsOwner=false).</summary>
         public string? PropertyOwnerName { get; set; }

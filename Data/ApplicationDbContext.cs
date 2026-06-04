@@ -18,6 +18,8 @@ namespace ApartmentManagementSystem.Data
 
         public DbSet<Expense> Expenses { get; set; }
 
+        public DbSet<AuditLog> AuditLogs { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -29,6 +31,17 @@ namespace ApartmentManagementSystem.Data
             builder.Entity<Expense>()
                 .Property(e => e.Amount)
                 .HasPrecision(18, 2);
+
+            builder.Entity<AuditLog>(entity =>
+            {
+                entity.Property(e => e.ActorUserId).HasMaxLength(450);
+                entity.Property(e => e.ActorDisplayName).HasMaxLength(200);
+                entity.Property(e => e.Action).HasMaxLength(100);
+                entity.Property(e => e.EntityType).HasMaxLength(100);
+                entity.Property(e => e.FlatNumber).HasMaxLength(50);
+                entity.Property(e => e.Details).HasMaxLength(2000);
+                entity.HasIndex(e => e.CreatedAtUtc);
+            });
         }
     }
 }

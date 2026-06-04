@@ -1,9 +1,9 @@
 @model ApartmentManagementSystem.Models.Resident
+@using ApartmentManagementSystem.Services
 
 @{
     ViewData["Title"] = "Resident Details";
 }
-
 <h1>Details</h1>
 
 <div>
@@ -16,16 +16,22 @@
         <dt class="col-sm-3">Resident Name</dt>
         <dd class="col-sm-9">@Model.OwnerName</dd>
 
-        <dt class="col-sm-3">Phone</dt>
-        <dd class="col-sm-9">@Model.PhoneNumber</dd>
+        <dt class="col-sm-3">Login mobile</dt>
+        <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "—" : Model.PhoneNumber)</dd>
 
-        <dt class="col-sm-3">Email</dt>
-        <dd class="col-sm-9">@Model.Email</dd>
+        <dt class="col-sm-3">Notification email</dt>
+        <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</dd>
 
-        <dt class="col-sm-3">Type</dt>
-        <dd class="col-sm-9">@(Model.IsOwner ? "Owner" : "Tenant")</dd>
+        <dt class="col-sm-3">Member type</dt>
+        <dd class="col-sm-9">@ResidentMemberHelper.GetMemberTypeLabel(Model)</dd>
 
-        @if (!Model.IsOwner)
+        @if (Model.MemberType == ApartmentManagementSystem.Models.ResidentMemberType.AssociationAdmin)
+        {
+            <dt class="col-sm-3">Designation</dt>
+            <dd class="col-sm-9">@(Model.AssociationDesignation ?? "—")</dd>
+        }
+
+        @if (Model.MemberType == ApartmentManagementSystem.Models.ResidentMemberType.Tenant)
         {
             <dt class="col-sm-3">Property Owner Name</dt>
             <dd class="col-sm-9">@(Model.PropertyOwnerName ?? "—")</dd>
@@ -38,6 +44,10 @@
     </dl>
 </div>
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
+    @if (User.IsInRole("Admin"))
+    {
+        <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a>
+        <span> | </span>
+    }
     <a asp-action="Index">Back to List</a>
 </div>

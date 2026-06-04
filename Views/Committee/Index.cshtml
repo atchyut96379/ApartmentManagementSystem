@@ -1,0 +1,85 @@
+@model List<ApartmentManagementSystem.Models.CommitteeMemberRowViewModel>
+
+@{
+    ViewData["Title"] = "Committee accounts";
+}
+
+<h1>Association committee accounts</h1>
+
+<p class="text-muted">
+    As system administrator (<code>Admin</code>), assign up to five committee roles from your
+    <strong>imported resident list</strong> (recommended), or create a new person if they are not in Excel.
+    Each role gets <strong>admin access</strong> and is the only type that can add or import residents.
+</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Designation</th>
+            <th>Name</th>
+            <th>Flat</th>
+            <th>Login mobile</th>
+            <th>Notification email</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model)
+        {
+            <tr>
+                <td><strong>@row.Designation</strong></td>
+                <td>@(row.Name ?? "—")</td>
+                <td>@(row.FlatNumber ?? "—")</td>
+                <td>@(row.LoginPhone ?? "—")</td>
+                <td>@(row.NotificationEmail ?? "—")</td>
+                <td>
+                    @if (row.IsFilled)
+                    {
+                        <span class="badge bg-success">Account created</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Vacant</span>
+                    }
+                </td>
+                <td class="text-nowrap">
+                    @if (!row.IsFilled)
+                    {
+                        <a asp-action="AssignFromResident" asp-route-designation="@row.Designation"
+                           class="btn btn-sm btn-primary me-1">
+                            From import list
+                        </a>
+                        <a asp-action="Create" asp-route-designation="@row.Designation"
+                           class="btn btn-sm btn-outline-secondary">
+                            New person
+                        </a>
+                    }
+                    else
+                    {
+                        @if (row.ResidentId.HasValue)
+                        {
+                            <a asp-controller="Residents" asp-action="LoginCredentials" asp-route-id="@row.ResidentId"
+                               class="btn btn-sm btn-outline-success">Credentials</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-controller="Home" asp-action="Index" class="btn btn-link">Back to dashboard</a>

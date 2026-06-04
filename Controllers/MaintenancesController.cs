@@ -24,7 +24,7 @@ namespace ApartmentManagementSystem.Controllers
             _billingService = billingService;
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Resident")]
         public async Task<IActionResult> Index()
         {
             await _billingService.EnsureMonthlyMaintenanceForAllResidentsAsync();
@@ -44,7 +44,7 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction("MyPayments", "ResidentPayments");
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Resident")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)

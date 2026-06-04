@@ -15,20 +15,26 @@
     <div class="card-header">Supported formats</div>
     <div class="card-body">
         <h6>1. Standard template (sheet &quot;Residents&quot;)</h6>
-        <p class="mb-2">Columns: FlatNumber, ResidentName, Email, Phone, ResidentType (Owner/Tenant), PropertyOwnerName.</p>
+        <p class="mb-2">Columns: FlatNumber, ResidentName, Phone (login mobile), Notification email (optional), ResidentType (Owner/Tenant), PropertyOwnerName.</p>
 
-        <h6>2. Society export (7 columns, 2 header rows)</h6>
+        <h6>2. Society export (6–7 columns, 2 header rows) — matches your sheet</h6>
         <p class="mb-2">
-            <strong>Row 1:</strong> S.No | Name | Flat No | Resident Type (merged over Owner+Tenant) | Owner Contact Number | Tenant Contact number<br />
-            <strong>Row 2:</strong> (empty under S.No, Name, Flat) | Owner | Tenant | (contact columns may be empty)<br />
-            <strong>Data from row 3:</strong> serial in S.No (ignored for import), name, flat, mark Owner <em>or</em> Tenant in the type columns
+            <strong>Row 1:</strong> Name | Flat No | Resident Type (merged over Owner+Tenant) | Owner Contact Number | Tenant Contact number<br />
+            <em>Optional:</em> S.No as first column — data may start in column A without serial numbers.<br />
+            <strong>Row 2:</strong> (empty under Name, Flat) | Owner | Tenant | (contact columns may be empty)<br />
+            <strong>Data from row 3:</strong> name, flat, mark Owner <em>or</em> Tenant in the type columns
             (<code>Owner</code>, <code>Tenant</code>, <code>X</code>, <code>Yes</code>, <code>1</code>, or a checkmark).
             If type columns are blank, owner contact only implies Owner; tenant contact implies Tenant.
-            Multiple phones in one cell (separated by <code>/</code>) use the first number only. Email is left blank.
+            Multiple phones in one cell (separated by <code>/</code>) use the first number only — that number becomes the login username. Email is optional (for reminders only).
             Tenants may have owner contact without an owner name.
         </p>
-        <p class="mb-0 text-muted">
+        <p class="mb-2 text-muted">
             Combined flats (109+110, 209+210, etc.) are normalized automatically (e.g. flat 110 becomes 109-110).
+        </p>
+        <p class="mb-0 text-warning">
+            <strong>Important:</strong> If you downloaded our template earlier, delete the empty <em>SocietyFormat</em> sheet or put all rows on one sheet.
+            The importer picks the sheet with the <strong>most resident rows</strong> (not the template sample sheet with only 2 rows).
+            Owner and tenant in the same flat are both imported (duplicate check uses flat + name + type).
         </p>
     </div>
 </div>
@@ -58,7 +64,19 @@
 else
 {
     <div class="alert alert-info">
-        Import complete: <strong>@Model.AddedCount</strong> added, <strong>@Model.SkippedCount</strong> skipped.
+        Import complete: <strong>@Model.AddedCount</strong> added, <strong>@Model.SkippedCount</strong> skipped
+        @if (Model.TotalRowsProcessed > 0)
+        {
+            <span> (processed @Model.TotalRowsProcessed rows)</span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.SheetName))
+        {
+            <br /><span class="small">Worksheet: <strong>@Model.SheetName</strong></span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.DiagnosticMessage))
+        {
+            <br /><span class="small text-muted">@Model.DiagnosticMessage</span>
+        }
     </div>
 
     @if (Model.Rows.Any())
@@ -67,6 +85,7 @@ else
             <thead class="table-dark">
                 <tr>
                     <th>Row</th>
+                    <th>Name</th>
                     <th>Flat</th>
                     <th>Status</th>
                     <th>Message</th>
@@ -77,6 +96,7 @@ else
                 {
                     <tr>
                         <td>@row.RowNumber</td>
+                        <td>@row.ResidentName</td>
                         <td>@row.FlatNumber</td>
                         <td>
                             @if (row.Status == "Added")
@@ -93,6 +113,30 @@ else
                 }
             </tbody>
         </table>
+    }
+
+    @if (Model.AddedCount > 0)
+    {
+        <div class="card border-success mb-3">
+            <div class="card-header bg-success text-white">Next steps</div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">
+                        <strong>Assign committee (do this first)</strong> — system Admin picks President, Secretary, etc.
+                        from this same imported list (no duplicate people).
+                        <a asp-controller="Committee" asp-action="Index" class="btn btn-sm btn-primary ms-2">Committee setup</a>
+                    </li>
+                    <li class="mb-2">
+                        <strong>Create logins for everyone else</strong> — owners/tenants only (committee are skipped).
+                        <a asp-action="BulkCreateLogins" class="btn btn-sm btn-warning text-dark ms-2">Create all logins</a>
+                    </li>
+                    <li>
+                        <strong>Share credentials</strong> — all users sign in at <a asp-controller="Account" asp-action="Login">Login</a>;
+                        first login forces a password change.
+                    </li>
+                </ol>
+            </div>
+        </div>
     }
 
     <a asp-action="Import" class="btn btn-primary">Import another file</a>

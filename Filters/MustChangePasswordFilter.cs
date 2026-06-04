@@ -1,4 +1,5 @@
 using ApartmentManagementSystem.Identity;
+using SystemAdminConstants = ApartmentManagementSystem.Identity.SystemAdminConstants;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -12,7 +13,10 @@ namespace ApartmentManagementSystem.Filters
             "ChangePasswordRequired",
             "Logout",
             "AccessDenied",
-            "Login"
+            "Login",
+            "ForgotPassword",
+            "VerifyForgotPasswordOtp",
+            "ResetForgottenPassword"
         };
 
         private readonly UserManager<ApplicationUser> _userManager;
@@ -45,7 +49,9 @@ namespace ApartmentManagementSystem.Filters
             }
 
             var user = await _userManager.GetUserAsync(context.HttpContext.User);
-            if (user != null && user.MustChangePassword)
+            if (user != null &&
+                !SystemAdminConstants.IsSystemAdmin(user) &&
+                user.MustChangePassword)
             {
                 context.Result = new RedirectToActionResult(
                     "ChangePasswordRequired",

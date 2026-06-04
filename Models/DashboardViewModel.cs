@@ -10,6 +10,10 @@ namespace ApartmentManagementSystem.Models
 
         public int TotalTenants { get; set; }
 
+        public int TotalAssociationAdmins { get; set; }
+
+        public List<AssociationMemberViewModel> AssociationCommittee { get; set; } = new();
+
         /// <summary>Sum of all paid maintenance records (all time).</summary>
         public decimal TotalCollected { get; set; }
 

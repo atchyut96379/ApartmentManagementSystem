@@ -4,7 +4,8 @@ namespace ApartmentManagementSystem.Models
 {
     public class CompleteProfileViewModel
     {
-        public string Email { get; set; } = string.Empty;
+        [Display(Name = "Login mobile")]
+        public string LoginId { get; set; } = string.Empty;
 
         [Required]
         [Display(Name = "Flat Number")]

@@ -1,0 +1,47 @@
+@model ApartmentManagementSystem.Models.CreateCommitteeAccountViewModel
+
+@{
+    ViewData["Title"] = "Create committee account";
+}
+
+<h1>Create @Model.Designation account</h1>
+<p class="text-muted">This user receives <strong>Admin</strong> rights and can add residents after login.</p>
+
+<form asp-action="Create" method="post">
+    <input type="hidden" asp-for="Designation" />
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="OwnerName" class="form-label"></label>
+        <input asp-for="OwnerName" class="form-control" />
+        <span asp-validation-for="OwnerName" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="FlatNumber" class="form-label"></label>
+        <input asp-for="FlatNumber" class="form-control" />
+        <span asp-validation-for="FlatNumber" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="PhoneNumber" class="form-label"></label>
+        <input asp-for="PhoneNumber" class="form-control" />
+        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        <div class="form-text">10-digit mobile — used as login username.</div>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" type="email" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+        <div class="form-text">Optional — for email reminders only, not for login.</div>
+    </div>
+
+    <div class="alert alert-info">
+        Default password: <strong>@(ViewBag.DefaultPasswordFormat)</strong> (must be changed on first login).
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create committee login</button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

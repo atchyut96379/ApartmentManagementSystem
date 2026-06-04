@@ -8,7 +8,9 @@ namespace ApartmentManagementSystem.Models
 
         public string FlatNumber { get; set; } = string.Empty;
 
-        public string Email { get; set; } = string.Empty;
+        public string LoginPhone { get; set; } = string.Empty;
+
+        public string? NotificationEmail { get; set; }
 
         public string TemporaryPassword { get; set; } = string.Empty;
 

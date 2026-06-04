@@ -1,0 +1,70 @@
+@model ApartmentManagementSystem.Models.PaymentReceiptViewModel
+
+@{
+    ViewData["Title"] = "Payment receipt";
+}
+
+<div class="receipt-container card shadow col-lg-6 mx-auto" id="receiptPrint">
+    <div class="card-header bg-success text-white text-center">
+        <h4 class="mb-0">Maintenance Payment Receipt</h4>
+    </div>
+    <div class="card-body">
+        <p class="text-center text-muted mb-3">Receipt # @Model.ReceiptNumber</p>
+        <table class="table table-borderless">
+            <tr>
+                <th>Flat number</th>
+                <td>@Model.FlatNumber</td>
+            </tr>
+            <tr>
+                <th>Name</th>
+                <td>@Model.Name</td>
+            </tr>
+            <tr>
+                <th>Month</th>
+                <td>@Model.Month @Model.Year</td>
+            </tr>
+            <tr>
+                <th>Amount</th>
+                <td>₹@Model.Amount.ToString("N2")</td>
+            </tr>
+            <tr>
+                <th>Fine</th>
+                <td>₹@Model.Fine.ToString("N2")</td>
+            </tr>
+            <tr>
+                <th>Total paid</th>
+                <td><strong>₹@Model.TotalPaid.ToString("N2")</strong></td>
+            </tr>
+            <tr>
+                <th>Transaction ID</th>
+                <td><code>@Model.TransactionId</code></td>
+            </tr>
+            <tr>
+                <th>Paid on</th>
+                <td>@Model.PaidAt.ToString("dd-MM-yyyy HH:mm")</td>
+            </tr>
+            <tr>
+                <th>Gateway</th>
+                <td>@Model.PaymentGateway</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="text-center mt-3">
+    <a asp-action="DownloadReceipt" asp-route-id="@Model.MaintenanceId" class="btn btn-success">
+        <i class="fas fa-download"></i> Download PDF receipt
+    </a>
+    <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+        <i class="fas fa-print"></i> Print
+    </button>
+    <a asp-action="MyPayments" class="btn btn-primary">Back to My Payments</a>
+    <a asp-controller="Payments" asp-action="Index" class="btn btn-link">Payment details (this month)</a>
+</div>
+
+@section Scripts {
+    <style media="print">
+        .main-sidebar, .main-header, .btn, .btn-link { display: none !important; }
+        .content-wrapper { margin: 0 !important; }
+    </style>
+}

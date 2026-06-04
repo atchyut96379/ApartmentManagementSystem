@@ -1,0 +1,36 @@
+@model ApartmentManagementSystem.Models.PublicSiteViewModel
+@{
+    ViewData["Title"] = "Contact";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
+}
+
+<h1>Contact</h1>
+<p>@Model.ApartmentName — Management committee</p>
+
+@if (!string.IsNullOrWhiteSpace(Model.Address))
+{
+    <p><strong>Address:</strong> @Model.Address</p>
+}
+@if (!string.IsNullOrWhiteSpace(Model.ContactPhone))
+{
+    <p><strong>Phone:</strong> @Model.ContactPhone</p>
+}
+@if (!string.IsNullOrWhiteSpace(Model.ContactEmail))
+{
+    <p><strong>Email:</strong> <a href="mailto:@Model.ContactEmail">@Model.ContactEmail</a></p>
+}
+
+@if (string.IsNullOrWhiteSpace(Model.Address) &&
+     string.IsNullOrWhiteSpace(Model.ContactPhone) &&
+     string.IsNullOrWhiteSpace(Model.ContactEmail))
+{
+    <div class="alert alert-info">
+        Add committee contact details in <code>appsettings.json</code> under <code>Society:ContactEmail</code>,
+        <code>ContactPhone</code>, and <code>Address</code> (or your production config).
+    </div>
+}
+
+<p class="mb-0">
+    For maintenance billing or payment issues, contact your society secretary or treasurer.
+    Portal login: <a asp-controller="Account" asp-action="Login">Resident login</a>.
+</p>

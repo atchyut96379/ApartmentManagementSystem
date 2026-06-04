@@ -1,0 +1,36 @@
+@model List<ApartmentManagementSystem.Models.AuditLog>
+
+@{
+    ViewData["Title"] = "Activity log";
+}
+
+<h1>Activity log</h1>
+<p class="text-muted">Recent actions by committee and system (last 200 entries).</p>
+
+<div class="table-responsive card shadow">
+    <table class="table table-sm table-striped mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>When (UTC)</th>
+                <th>Who</th>
+                <th>Action</th>
+                <th>Flat</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model)
+            {
+                <tr>
+                    <td class="text-nowrap">@log.CreatedAtUtc.ToString("dd-MMM-yyyy HH:mm")</td>
+                    <td>@log.ActorDisplayName</td>
+                    <td><span class="badge bg-secondary">@log.Action</span></td>
+                    <td>@(log.FlatNumber ?? "—")</td>
+                    <td class="small">@log.Details</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<a asp-controller="Residents" asp-action="Index" class="btn btn-link mt-3">Back to Residents</a>

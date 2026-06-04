@@ -17,11 +17,11 @@
         <dt class="col-sm-3">Resident Name</dt>
         <dd class="col-sm-9">@Model.OwnerName</dd>
 
-        <dt class="col-sm-3">Phone</dt>
-        <dd class="col-sm-9">@Model.PhoneNumber</dd>
+        <dt class="col-sm-3">Login mobile</dt>
+        <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "—" : Model.PhoneNumber)</dd>
 
-        <dt class="col-sm-3">Email</dt>
-        <dd class="col-sm-9">@Model.Email</dd>
+        <dt class="col-sm-3">Notification email</dt>
+        <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</dd>
 
         <dt class="col-sm-3">Type</dt>
         <dd class="col-sm-9">@(Model.IsOwner ? "Owner" : "Tenant")</dd>
