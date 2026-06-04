@@ -7,6 +7,15 @@
 
 <h1>Create resident login</h1>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
 <p class="text-muted">
     Flat <strong>@Model.FlatNumber</strong> — @Model.ResidentName
 </p>

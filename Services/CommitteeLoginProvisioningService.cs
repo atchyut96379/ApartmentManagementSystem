@@ -226,7 +226,36 @@ namespace ApartmentManagementSystem.Services
                     };
                 }
 
-                resultPhone = user.UserName;
+                if (!string.IsNullOrWhiteSpace(phoneOverride))
+                {
+                    var loginPhone = LoginIdentityService.NormalizeLoginPhone(phoneOverride);
+                    if (!LoginIdentityService.IsValidLoginPhone(loginPhone))
+                    {
+                        return new ResidentLoginProvisioningResult
+                        {
+                            Errors = new[] { "A valid mobile number (10+ digits) is required." }
+                        };
+                    }
+
+                    if (!PhoneNumberHelper.Match(user.UserName, loginPhone))
+                    {
+                        var setName = await _userManager.SetUserNameAsync(user, loginPhone);
+                        if (!setName.Succeeded)
+                        {
+                            return new ResidentLoginProvisioningResult
+                            {
+                                Errors = setName.Errors.Select(e => e.Description)
+                            };
+                        }
+                    }
+
+                    resident.PhoneNumber = loginPhone;
+                    resultPhone = loginPhone;
+                }
+                else
+                {
+                    resultPhone = user.UserName;
+                }
             }
 
             var loginUser = await _userManager.FindByIdAsync(resident.UserId!);

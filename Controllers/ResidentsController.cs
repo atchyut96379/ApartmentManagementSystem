@@ -109,6 +109,8 @@ namespace ApartmentManagementSystem.Controllers
         [RequireCommitteeAdmin]
         public async Task<IActionResult> CreateLogin(int? id)
         {
+            ClearStaleResidentLoginTempData();
+
             var resident = await GetResidentAsync(id);
             if (resident == null)
             {
@@ -229,6 +231,7 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
+            TempData.Remove("Error");
             TempData["GeneratedLoginPhone"] = provisionResult.LoginPhone;
             TempData["GeneratedPassword"] = provisionResult.TemporaryPassword;
             TempData["GeneratedNotificationEmail"] = provisionResult.NotificationEmail;
@@ -246,6 +249,8 @@ namespace ApartmentManagementSystem.Controllers
             }
             else
             {
+                TempData["Success"] =
+                    $"Login created for flat {resident.FlatNumber}. Mobile {provisionResult.LoginPhone} is saved on the resident record.";
                 await _auditLog.LogAsync(
                     AuditActions.LoginCreated,
                     $"Resident login created. Mobile {provisionResult.LoginPhone}.",
@@ -363,6 +368,7 @@ namespace ApartmentManagementSystem.Controllers
                 return NotFound();
             }
 
+            ClearStaleResidentLoginTempData();
             TempData.Keep("GeneratedLoginPhone");
             TempData.Keep("GeneratedPassword");
             TempData.Keep("GeneratedNotificationEmail");
@@ -1050,6 +1056,23 @@ namespace ApartmentManagementSystem.Controllers
                 {
                     resident.OwnerContactNumber = null;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Removes obsolete mobile warnings left from an older flow (redirect to Edit without showing the alert).
+        /// </summary>
+        private void ClearStaleResidentLoginTempData()
+        {
+            if (TempData["Error"] is not string err)
+            {
+                return;
+            }
+
+            if (err.Contains("resident record", StringComparison.OrdinalIgnoreCase) ||
+                err.Contains("before creating a login", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData.Remove("Error");
             }
         }
     }
