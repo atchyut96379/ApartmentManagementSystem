@@ -52,22 +52,26 @@ namespace ApartmentManagementSystem.Services
             _logger = logger;
         }
 
-        public async Task<PaymentNotificationResult> SendPendingPaymentRemindersAsync()
+        public Task<PaymentNotificationResult> SendPendingPaymentRemindersAsync() =>
+            SendPendingPaymentRemindersAsync(null, null);
+
+        public async Task<PaymentNotificationResult> SendPendingPaymentRemindersAsync(
+            int? year,
+            string? month)
         {
             await _billingService.EnsureMonthlyMaintenanceForAllResidentsAsync();
 
             var result = new PaymentNotificationResult();
-            var month = DateTime.Now.ToString("MMMM");
-            var year = DateTime.Now.Year;
-            var apartmentName = _society.ApartmentName ?? "your apartment";
-            var appUrl = _settingsStore.GetApplicationSettings()
-                .GetAppUrl(_httpContextAccessor.HttpContext?.Request);
-            var payUrl = $"{appUrl}/ResidentPayments/MyPayments";
+            var (resolvedYear, resolvedMonth) = BillingMonthHelper.ResolvePeriod(year, month);
+            var payUrl = BuildPayUrl();
+            var associationName = GetAssociationSmsName();
 
             var residents = await _context.Residents.ToListAsync();
-            var maintenances = await _context.Maintenances
-                .Where(m => m.Year == year && !m.PaymentStatus)
-                .ToListAsync();
+            var maintenances = (await _context.Maintenances
+                .Where(m => m.Year == resolvedYear && !m.PaymentStatus)
+                .ToListAsync())
+                .Where(m => string.Equals(m.Month, resolvedMonth, StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
             foreach (var resident in residents)
             {
@@ -77,47 +81,20 @@ namespace ApartmentManagementSystem.Services
                 }
 
                 var maintenance = maintenances.FirstOrDefault(m =>
-                    FlatNumberHelper.Match(m.FlatNumber, resident.FlatNumber) &&
-                    string.Equals(m.Month, month, StringComparison.OrdinalIgnoreCase));
+                    FlatNumberHelper.Match(m.FlatNumber, resident.FlatNumber));
 
                 if (maintenance == null)
                 {
-                    result.Skipped++;
                     continue;
                 }
 
-                var fine = _fineService.CalculateFine(maintenance);
-                var total = maintenance.Amount + fine;
-                var dueText = maintenance.DueDate.ToString("dd-MM-yyyy");
+                var sms = BuildReminderSmsMessage(
+                    resident.OwnerName,
+                    maintenance.Month,
+                    payUrl,
+                    associationName);
 
-                var subject = $"Pending maintenance — {month} {year} ({apartmentName})";
-                var plain =
-                    $"Dear {resident.OwnerName},\n\n" +
-                    $"Maintenance for {month} {year} (Flat {resident.FlatNumber}) is pending.\n" +
-                    $"Amount: ₹{maintenance.Amount:N2}" +
-                    (fine > 0 ? $", Late fine: ₹{fine:N2}" : "") +
-                    $", Total due: ₹{total:N2}\n" +
-                    $"Due date: {dueText}\n\n" +
-                    $"Pay online: {payUrl}\n\n" +
-                    $"— {apartmentName} Management";
-
-                var html =
-                    $"<p>Dear <strong>{resident.OwnerName}</strong>,</p>" +
-                    $"<p>Maintenance for <strong>{month} {year}</strong> (Flat <strong>{resident.FlatNumber}</strong>) is <span style='color:#c00'>pending</span>.</p>" +
-                    $"<ul><li>Amount: ₹{maintenance.Amount:N2}</li>" +
-                    (fine > 0 ? $"<li>Late fine: ₹{fine:N2}</li>" : "") +
-                    $"<li><strong>Total due: ₹{total:N2}</strong></li>" +
-                    $"<li>Due date: {dueText}</li></ul>" +
-                    $"<p><a href='{payUrl}' style='background:#198754;color:#fff;padding:10px 16px;text-decoration:none;border-radius:4px'>Pay now</a></p>" +
-                    $"<p>— {apartmentName} Management</p>";
-
-                var sentAny = await SendToResidentAsync(
-                    resident,
-                    subject,
-                    plain,
-                    html,
-                    $"{apartmentName}: Pending maintenance {month} {year}, flat {resident.FlatNumber}. Total ₹{total:N0}. Pay: {payUrl}",
-                    result);
+                await SendPaymentReminderSmsAsync(resident, sms, result);
             }
 
             return result;
@@ -146,36 +123,23 @@ namespace ApartmentManagementSystem.Services
                 return new SingleReminderResult { Error = "No resident found for this flat." };
             }
 
-            var fine = _fineService.CalculateFine(maintenance);
-            var total = maintenance.Amount + fine;
-            var apartmentName = _society.ApartmentName ?? "your apartment";
-            var appUrl = _settingsStore.GetApplicationSettings()
-                .GetAppUrl(_httpContextAccessor.HttpContext?.Request);
-            var payUrl = $"{appUrl}/ResidentPayments/MyPayments";
-            var dueText = maintenance.DueDate.ToString("dd-MM-yyyy");
-
-            var subject =
-                $"Pending maintenance — {maintenance.Month} {maintenance.Year} ({apartmentName})";
-            var plain =
-                $"Dear {resident.OwnerName},\n\n" +
-                $"Maintenance for {maintenance.Month} {maintenance.Year} (Flat {resident.FlatNumber}) is pending.\n" +
-                $"Total due: ₹{total:N2}. Due: {dueText}\nPay: {payUrl}\n\n— {apartmentName}";
-            var html =
-                $"<p>Dear <strong>{resident.OwnerName}</strong>,</p>" +
-                $"<p>Pending maintenance <strong>{maintenance.Month} {maintenance.Year}</strong> — total <strong>₹{total:N2}</strong>.</p>" +
-                $"<p><a href='{payUrl}'>Pay now</a></p>";
-            var sms =
-                $"{apartmentName}: Pending maintenance {maintenance.Month} {maintenance.Year}, flat {resident.FlatNumber}. Due ₹{total:N0}. Pay: {payUrl}";
+            var payUrl = BuildPayUrl();
+            var associationName = GetAssociationSmsName();
+            var sms = BuildReminderSmsMessage(
+                resident.OwnerName,
+                maintenance.Month,
+                payUrl,
+                associationName);
 
             var result = new PaymentNotificationResult();
-            var sent = await SendToResidentAsync(resident, subject, plain, html, sms, result);
+            var sent = await SendPaymentReminderSmsAsync(resident, sms, result);
 
             if (!sent)
             {
                 return new SingleReminderResult
                 {
                     Error = result.Errors.FirstOrDefault() ??
-                            "No email or SMS could be sent. Add phone/email on resident record or configure Integrations."
+                            "SMS could not be sent. Add login mobile on the resident and configure MSG91 under Integrations."
                 };
             }
 
@@ -236,6 +200,74 @@ namespace ApartmentManagementSystem.Services
             return await _smsSender.SendAsync(
                 phone,
                 $"{apartmentName}: Test SMS from apartment portal. SMS integration is working.");
+        }
+
+        private string BuildPayUrl()
+        {
+            var appUrl = _settingsStore.GetApplicationSettings()
+                .GetAppUrl(_httpContextAccessor.HttpContext?.Request);
+
+            return $"{appUrl.TrimEnd('/')}/ResidentPayments/MyPayments";
+        }
+
+        private string GetAssociationSmsName()
+        {
+            var name = (_society.ApartmentName ?? "Marvel").Trim();
+            if (name.EndsWith("association", StringComparison.OrdinalIgnoreCase))
+            {
+                return name;
+            }
+
+            var shortName = name.Replace(" Rocks", "", StringComparison.OrdinalIgnoreCase).Trim();
+            return $"{shortName} association";
+        }
+
+        private static string BuildReminderSmsMessage(
+            string residentName,
+            string month,
+            string payUrl,
+            string associationName)
+        {
+            var firstName = residentName.Trim();
+            var space = firstName.IndexOf(' ');
+            if (space > 0)
+            {
+                firstName = firstName[..space];
+            }
+
+            return
+                $"Hi {firstName},\n" +
+                $"Still {month} maintenance is pending.\n" +
+                $"Pay: {payUrl}\n" +
+                $"From {associationName}";
+        }
+
+        private async Task<bool> SendPaymentReminderSmsAsync(
+            Resident resident,
+            string smsBody,
+            PaymentNotificationResult result)
+        {
+            if (string.IsNullOrWhiteSpace(resident.PhoneNumber))
+            {
+                result.Errors.Add(
+                    $"Flat {resident.FlatNumber}: Add login mobile on Residents list for SMS reminders.");
+                result.Skipped++;
+                return false;
+            }
+
+            var (ok, err) = await _smsSender.SendAsync(resident.PhoneNumber.Trim(), smsBody);
+            if (ok)
+            {
+                result.SmsSent++;
+                return true;
+            }
+
+            result.Errors.Add(
+                string.IsNullOrWhiteSpace(err)
+                    ? $"Flat {resident.FlatNumber}: SMS failed."
+                    : $"Flat {resident.FlatNumber}: {err}");
+            result.Skipped++;
+            return false;
         }
 
         private async Task<bool> SendToResidentAsync(

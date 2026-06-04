@@ -52,21 +52,26 @@ namespace ApartmentManagementSystem.Controllers
         [RequireCommitteeAdmin]
         public async Task<IActionResult> SendReminders(int? year, string? month)
         {
-            var result = await _notifications.SendPendingPaymentRemindersAsync();
+            var result = await _notifications.SendPendingPaymentRemindersAsync(year, month);
 
             await _auditLog.LogAsync(
                 AuditActions.PaymentReminderSent,
-                $"Bulk reminders: {result.EmailSent} email, {result.SmsSent} SMS, {result.Skipped} skipped.");
+                $"Bulk SMS reminders ({month} {year}): {result.SmsSent} sent, {result.Skipped} skipped.");
 
-            if (result.EmailSent == 0 && result.SmsSent == 0 && result.Errors.Count == 0)
+            if (result.SmsSent == 0 && result.Errors.Count == 0)
             {
                 TempData["Success"] =
-                    $"Reminders processed. {result.Skipped} resident(s) skipped. Configure Integrations for live email/SMS.";
+                    "No pending flats for this month, or all skipped. Check billing period and resident mobile numbers.";
+            }
+            else if (result.SmsSent > 0)
+            {
+                TempData["Success"] =
+                    $"SMS reminders sent: {result.SmsSent}. Skipped: {result.Skipped}.";
             }
             else
             {
                 TempData["Success"] =
-                    $"Reminders sent: {result.EmailSent} email(s), {result.SmsSent} SMS. Skipped: {result.Skipped}.";
+                    $"No SMS sent. Skipped: {result.Skipped}. Configure MSG91 under Integrations.";
             }
 
             if (result.Errors.Count > 0)
@@ -99,7 +104,7 @@ namespace ApartmentManagementSystem.Controllers
                     flatNumber: result.FlatNumber);
 
                 TempData["Success"] =
-                    $"Reminder sent to {result.ResidentName} (flat {result.FlatNumber}).";
+                    $"SMS reminder sent to {result.ResidentName} (flat {result.FlatNumber}).";
             }
 
             return RedirectToAction(nameof(Index), new { year, month });
