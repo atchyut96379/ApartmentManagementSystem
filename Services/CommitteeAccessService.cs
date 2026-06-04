@@ -55,7 +55,19 @@ namespace ApartmentManagementSystem.Services
 
         public async Task<bool> CanManageResidentsAsync(ClaimsPrincipal principal)
         {
-            return await IsCommitteeAdminAsync(principal);
+            var user = await GetUserAsync(principal);
+            if (user == null)
+            {
+                return false;
+            }
+
+            // System Admin can bootstrap (import / add) before committee accounts exist.
+            if (IsSystemAdmin(user))
+            {
+                return true;
+            }
+
+            return await IsCommitteeAdminAsync(user);
         }
 
         public async Task<Resident?> GetCommitteeProfileAsync(ApplicationUser? user)

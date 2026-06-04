@@ -28,12 +28,17 @@
     {
         <div class="alert alert-primary d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div>
-                <strong>Step 1 — Committee setup:</strong> assign President, Vice President, Secretary,
-                Joint Secretary, and Treasurer from your imported resident list. Only they can add residents.
+                <strong>Setup:</strong> import residents (Excel) if the list is empty, then assign committee
+                (from list or <em>New person</em>). Committee logins manage residents after that.
             </div>
-            <a asp-controller="Committee" asp-action="Index" class="btn btn-light text-primary fw-bold">
-                Assign committee from import
-            </a>
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-controller="Residents" asp-action="Import" class="btn btn-light text-success fw-bold">
+                    Import Excel
+                </a>
+                <a asp-controller="Committee" asp-action="Index" class="btn btn-light text-primary fw-bold">
+                    Committee accounts
+                </a>
+            </div>
         </div>
     }
 

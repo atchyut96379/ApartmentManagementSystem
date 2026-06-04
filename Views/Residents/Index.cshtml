@@ -21,11 +21,17 @@
 {
     <div class="alert alert-info mb-3">
         <p class="mb-2">
-            You are logged in as system <code>Admin</code>. Pick the five committee members from your
-            imported Excel list (same people — no duplicate entry). Only committee logins can add residents.
+            You are logged in as system <code>Admin</code>. First <strong>import residents from Excel</strong>
+            (or restore your database). Then assign committee roles from that list, or use <strong>New person</strong>
+            on the committee page. Committee logins manage residents day to day after setup.
         </p>
+        <a asp-action="Import" class="btn btn-success me-1">
+            <i class="fas fa-file-excel me-1"></i> Import from Excel
+        </a>
+        <a asp-action="DownloadTemplate" class="btn btn-outline-secondary me-1">Download template</a>
+        <a asp-action="Create" class="btn btn-outline-primary me-1">Add one resident</a>
         <a asp-controller="Committee" asp-action="Index" class="btn btn-primary">
-            <i class="fas fa-user-shield me-1"></i> Create committee accounts
+            <i class="fas fa-user-shield me-1"></i> Committee accounts
         </a>
     </div>
 }
