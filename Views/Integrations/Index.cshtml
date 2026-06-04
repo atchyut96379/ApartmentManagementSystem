@@ -98,7 +98,8 @@
                 <div class="mb-2">
                     <label asp-for="SmsProvider" class="form-label">Provider</label>
                     <select asp-for="SmsProvider" class="form-select">
-                        <option value="Msg91">Msg91 (India)</option>
+                        <option value="Msg91">Msg91 (India — live SMS)</option>
+                        <option value="Simulation">Simulation (test — no real SMS)</option>
                         <option value="Twilio">Twilio</option>
                     </select>
                 </div>

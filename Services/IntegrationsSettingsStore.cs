@@ -34,6 +34,7 @@ namespace ApartmentManagementSystem.Services
             var settings = new NotificationSettings();
             _configuration.GetSection(NotificationSettings.SectionName).Bind(settings);
             ApplyLocalOverlay(settings, LoadLocal()?.Notification);
+            NormalizeSmsSettings(settings);
             return settings;
         }
 
@@ -107,7 +108,7 @@ namespace ApartmentManagementSystem.Services
                 PasswordOnFile = !string.IsNullOrWhiteSpace(local?.Notification?.SmtpPassword),
                 RazorpaySecretOnFile = !string.IsNullOrWhiteSpace(local?.Payment?.Razorpay?.KeySecret),
                 TwilioTokenOnFile = !string.IsNullOrWhiteSpace(local?.Notification?.TwilioAuthToken),
-                Msg91KeyOnFile = !string.IsNullOrWhiteSpace(local?.Notification?.Msg91AuthKey)
+                Msg91KeyOnFile = !string.IsNullOrWhiteSpace(notification.Msg91AuthKey)
             };
         }
 
@@ -237,6 +238,26 @@ namespace ApartmentManagementSystem.Services
         private static string? MaskIfOnFile(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : "••••••••";
+        }
+
+        /// <summary>
+        /// Turns on MSG91 when keys exist (Azure app settings or integrations.local.json).
+        /// </summary>
+        private static void NormalizeSmsSettings(NotificationSettings settings)
+        {
+            if (string.IsNullOrWhiteSpace(settings.SmsProvider))
+            {
+                settings.SmsProvider = "Msg91";
+            }
+
+            var hasMsg91 = !string.IsNullOrWhiteSpace(settings.Msg91AuthKey) &&
+                           !string.IsNullOrWhiteSpace(settings.Msg91SenderId);
+
+            if (hasMsg91)
+            {
+                settings.EnableSms = true;
+                settings.SmsProvider = "Msg91";
+            }
         }
     }
 }

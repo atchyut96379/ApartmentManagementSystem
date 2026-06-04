@@ -18,6 +18,7 @@ namespace ApartmentManagementSystem.Services
 
             var emailReady = notification.IsEmailConfigured;
             var smsReady = notification.IsSmsConfigured;
+            var smsSimulation = notification.IsSimulationSms;
             var razorpayReady = payment.Provider.Equals("Razorpay", StringComparison.OrdinalIgnoreCase) &&
                                 payment.Razorpay.IsConfigured;
 
@@ -29,9 +30,11 @@ namespace ApartmentManagementSystem.Services
                     : "Fill the form below, check Enable email, and save.",
                 SmsReady = smsReady,
                 SmsProvider = notification.SmsProvider,
-                SmsStatus = smsReady
-                    ? $"{notification.SmsProvider} configured"
-                    : "Fill MSG91 or Twilio fields below, check Enable SMS, and save.",
+                SmsStatus = smsSimulation
+                    ? "Simulation — reminders log only (no real SMS). Add MSG91 keys for live SMS."
+                    : smsReady
+                        ? $"{notification.SmsProvider} configured"
+                        : "Enable SMS, add MSG91 Auth Key + Sender ID, Save (or Azure app settings).",
                 PaymentProvider = payment.Provider,
                 RazorpayReady = razorpayReady,
                 RazorpayStatus = razorpayReady

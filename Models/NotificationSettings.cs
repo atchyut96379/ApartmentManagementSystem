@@ -26,8 +26,8 @@ namespace ApartmentManagementSystem.Models
 
         public string FromName { get; set; } = "Apartment Management";
 
-        /// <summary>Twilio or Msg91 (India)</summary>
-        public string SmsProvider { get; set; } = "Twilio";
+        /// <summary>Msg91, Twilio, or Simulation (log only — testing)</summary>
+        public string SmsProvider { get; set; } = "Msg91";
 
         public bool EnableSms { get; set; }
 
@@ -61,6 +61,11 @@ namespace ApartmentManagementSystem.Models
             !string.IsNullOrWhiteSpace(Msg91AuthKey) &&
             !string.IsNullOrWhiteSpace(Msg91SenderId);
 
-        public bool IsSmsConfigured => IsTwilioConfigured || IsMsg91Configured;
+        public bool IsSimulationSms =>
+            EnableSms &&
+            SmsProvider.Equals("Simulation", StringComparison.OrdinalIgnoreCase);
+
+        public bool IsSmsConfigured =>
+            IsTwilioConfigured || IsMsg91Configured || IsSimulationSms;
     }
 }

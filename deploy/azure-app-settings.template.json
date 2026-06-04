@@ -19,5 +19,9 @@
   "Notification__SmtpUser": "your@gmail.com",
   "Notification__SmtpPassword": "app-password",
   "Notification__FromEmail": "your@gmail.com",
-  "Notification__FromName": "Marvel Rocks Apartment"
+  "Notification__FromName": "Marvel Rocks Apartment",
+  "Notification__EnableSms": "true",
+  "Notification__SmsProvider": "Msg91",
+  "Notification__Msg91AuthKey": "YOUR_MSG91_AUTH_KEY",
+  "Notification__Msg91SenderId": "YOUR6C"
 }

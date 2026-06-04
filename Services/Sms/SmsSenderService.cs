@@ -24,7 +24,18 @@ namespace ApartmentManagementSystem.Services.Sms
             var settings = _settingsStore.GetNotificationSettings();
             if (!settings.IsSmsConfigured)
             {
-                return (false, "SMS is not configured. Open Integrations, fill MSG91 or Twilio details, check Enable SMS, and click Save settings.");
+                return (false,
+                    "SMS is not configured. Integrations → enable SMS → MSG91 Auth Key + Sender ID → Save. " +
+                    "On Azure, also add Notification__Msg91AuthKey and Notification__Msg91SenderId in App Service settings.");
+            }
+
+            if (settings.IsSimulationSms)
+            {
+                _logger.LogWarning(
+                    "SMS simulation (no real message sent) to {Phone}: {Body}",
+                    phone,
+                    body);
+                return (true, null);
             }
 
             if (settings.SmsProvider.Equals("Msg91", StringComparison.OrdinalIgnoreCase))

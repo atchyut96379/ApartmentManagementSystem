@@ -66,6 +66,13 @@ namespace ApartmentManagementSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            if (model.EnableSms &&
+                model.SmsProvider.Equals("Simulation", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Success"] =
+                    "Simulation SMS enabled — Remind will succeed but no real text is sent until you add MSG91 keys.";
+            }
+
             if (model.PaymentProvider.Equals("Razorpay", StringComparison.OrdinalIgnoreCase))
             {
                 var hasKeyId = !string.IsNullOrWhiteSpace(model.RazorpayKeyId);
