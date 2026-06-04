@@ -44,7 +44,8 @@ namespace ApartmentManagementSystem.Controllers
             var ok = await _paymentGateway.ProcessWebhookAsync(body, signature);
             if (!ok)
             {
-                _logger.LogWarning("Razorpay webhook rejected or ignored.");
+                _logger.LogWarning(
+                    "Razorpay webhook rejected (bad signature, unknown order, or invalid payload).");
                 return BadRequest();
             }
 

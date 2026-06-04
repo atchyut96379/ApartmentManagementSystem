@@ -169,14 +169,18 @@ Verify: open `https://marvelrocks-ams.azurewebsites.net/health` → should retur
 
 ---
 
-## Step 5 — Custom domain
+## Step 5 — Custom domain (login URL)
+
+**Full guide:** [CUSTOM-DOMAIN.md](./CUSTOM-DOMAIN.md)
+
+Short version:
 
 1. Buy domain (e.g. `marvelrocks.in`).
-2. App Service → **Custom domains** → Add `payments.marvelrocks.in` or root domain.
-3. At registrar, add DNS records Azure shows (usually **CNAME** or **A** + **TXT** verify).
+2. App Service → **Custom domains** → Add `portal.marvelrocks.in`.
+3. At registrar, add DNS records Azure shows (usually **CNAME** + **TXT** verify).
 4. Managed certificate: **Add binding** → App Service Managed Certificate (free HTTPS).
-5. Update `Application__AppUrl` to `https://payments.marvelrocks.in`.
-6. In **Integrations** (or app settings), same URL for Razorpay links.
+5. Set `Application__AppUrl` = `https://portal.marvelrocks.in` → **Restart**.
+6. Share `https://portal.marvelrocks.in/Account/Login` with committee and residents.
 
 Public pages for Razorpay review:
 
@@ -208,10 +212,15 @@ Public pages for Razorpay review:
 
 ## Security checklist
 
-- [ ] `Identity:ResetAndSeedAdminOnStartup` = **false** in production  
+See also **[PRODUCTION-HARDENING.md](./PRODUCTION-HARDENING.md)**.
+
+- [ ] `Identity__ResetAndSeedAdminOnStartup` = **false** in production  
 - [ ] Strong SQL password; firewall restricted  
+- [ ] Azure SQL **point-in-time backup** enabled  
+- [ ] `Application__AppUrl` = your **custom domain**  
 - [ ] No secrets in git (`integrations.local.json` stays local)  
-- [ ] Rotate Admin password after first deploy  
+- [ ] Change default **Admin** password on first login  
+- [ ] Application Insights connection string (optional)  
 
 ---
 

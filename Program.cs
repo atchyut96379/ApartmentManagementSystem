@@ -18,6 +18,13 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var applicationInsightsConnectionString =
+    builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+if (!string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
+
 builder.Configuration.AddJsonFile(
     "integrations.local.json",
     optional: true,
@@ -72,6 +79,10 @@ builder.Services.AddScoped<CommitteeAccessService>();
 builder.Services.AddScoped<CommitteeLoginProvisioningService>();
 builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<PasswordResetOtpService>();
+builder.Services.AddScoped<ResidentValidationService>();
+
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>("database");
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -83,15 +94,22 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
+var identitySettings = builder.Configuration
+    .GetSection(IdentitySeedSettings.SectionName)
+    .Get<IdentitySeedSettings>() ?? new IdentitySeedSettings();
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
-        // Allows default system admin password "Admin" (5 characters, no digit).
-        options.Password.RequiredLength = 5;
-        options.Password.RequireDigit = false;
+        options.Password.RequiredLength = identitySettings.PasswordRequiredLength;
+        options.Password.RequireDigit = identitySettings.PasswordRequireDigit;
         options.Password.RequireUppercase = false;
         options.Password.RequireLowercase = false;
         options.Password.RequireNonAlphanumeric = false;
         options.User.RequireUniqueEmail = false;
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = identitySettings.LockoutMaxFailedAttempts;
+        options.Lockout.DefaultLockoutTimeSpan =
+            TimeSpan.FromMinutes(identitySettings.LockoutMinutes);
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
@@ -99,8 +117,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
-
     options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(identitySettings.SessionIdleMinutes);
+    options.SlidingExpiration = true;
 });
 
 var app = builder.Build();
@@ -126,8 +145,21 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
-    .AllowAnonymous();
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var payload = new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.ToDictionary(
+                e => e.Key,
+                e => e.Value.Status.ToString())
+        };
+        await context.Response.WriteAsJsonAsync(payload);
+    }
+}).AllowAnonymous();
 
 app.MapHub<PaymentUpdatesHub>("/hubs/payments");
 

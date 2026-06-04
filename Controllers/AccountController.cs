@@ -24,6 +24,7 @@ namespace ApartmentManagementSystem.Controllers
         private readonly PasswordResetOtpService _otpService;
         private readonly SocietySettings _societySettings;
         private readonly AuditLogService _auditLog;
+        private readonly IntegrationsSettingsStore _settingsStore;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
@@ -37,7 +38,8 @@ namespace ApartmentManagementSystem.Controllers
             LoginIdentityService loginIdentity,
             PasswordResetOtpService otpService,
             IOptions<SocietySettings> societySettings,
-            AuditLogService auditLog)
+            AuditLogService auditLog,
+            IntegrationsSettingsStore settingsStore)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -51,6 +53,7 @@ namespace ApartmentManagementSystem.Controllers
             _otpService = otpService;
             _societySettings = societySettings.Value;
             _auditLog = auditLog;
+            _settingsStore = settingsStore;
         }
 
         // =========================================
@@ -164,6 +167,13 @@ namespace ApartmentManagementSystem.Controllers
             }
 
             ViewBag.PrefillMobile = mobile;
+            var appSettings = _settingsStore.GetApplicationSettings();
+            var publicUrl = appSettings.GetAppUrl(Request);
+            ViewBag.PublicPortalUrl = publicUrl;
+            ViewBag.HasCustomPortalUrl =
+                !string.IsNullOrWhiteSpace(appSettings.AppUrl) &&
+                !appSettings.AppUrl.Contains("azurewebsites.net", StringComparison.OrdinalIgnoreCase) &&
+                !appSettings.AppUrl.Contains("localhost", StringComparison.OrdinalIgnoreCase);
             return View();
         }
 

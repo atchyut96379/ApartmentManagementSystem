@@ -258,6 +258,12 @@ namespace ApartmentManagementSystem.Services
                 return false;
             }
 
+            if (maintenance.PaymentStatus &&
+                string.Equals(maintenance.TransactionId, paymentId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
             var payerName = maintenance.PayerName ?? "Resident";
             if (payment.TryGetProperty("notes", out var notes) &&
                 notes.TryGetProperty("payer_name", out var payerNote))

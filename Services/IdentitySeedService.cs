@@ -61,7 +61,7 @@ namespace ApartmentManagementSystem.Services
                 Email = SystemAdminConstants.Email,
                 FullName = SystemAdminConstants.FullName,
                 EmailConfirmed = true,
-                MustChangePassword = false,
+                MustChangePassword = true,
                 FlatNumber = null
             };
 
@@ -95,7 +95,7 @@ namespace ApartmentManagementSystem.Services
                 Email = SystemAdminConstants.Email,
                 FullName = SystemAdminConstants.FullName,
                 EmailConfirmed = true,
-                MustChangePassword = false
+                MustChangePassword = true
             };
 
             var createResult = await _userManager.CreateAsync(

@@ -49,9 +49,7 @@ namespace ApartmentManagementSystem.Filters
             }
 
             var user = await _userManager.GetUserAsync(context.HttpContext.User);
-            if (user != null &&
-                !SystemAdminConstants.IsSystemAdmin(user) &&
-                user.MustChangePassword)
+            if (user != null && user.MustChangePassword)
             {
                 context.Result = new RedirectToActionResult(
                     "ChangePasswordRequired",

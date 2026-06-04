@@ -25,6 +25,7 @@ namespace ApartmentManagementSystem.Controllers
         private readonly CommitteeLoginProvisioningService _committeeProvisioning;
         private readonly LoginIdentityService _loginIdentity;
         private readonly AuditLogService _auditLog;
+        private readonly ResidentValidationService _residentValidation;
 
         public ResidentsController(
             ApplicationDbContext context,
@@ -38,7 +39,8 @@ namespace ApartmentManagementSystem.Controllers
             CommitteeAccessService committeeAccess,
             CommitteeLoginProvisioningService committeeProvisioning,
             LoginIdentityService loginIdentity,
-            AuditLogService auditLog)
+            AuditLogService auditLog,
+            ResidentValidationService residentValidation)
         {
             _context = context;
             _billingService = billingService;
@@ -48,10 +50,12 @@ namespace ApartmentManagementSystem.Controllers
             _accountService = accountService;
             _loginProvisioning = loginProvisioning;
             _bulkLoginService = bulkLoginService;
+            _residentValidation = residentValidation;
             _committeeAccess = committeeAccess;
             _committeeProvisioning = committeeProvisioning;
             _loginIdentity = loginIdentity;
             _auditLog = auditLog;
+            _residentValidation = residentValidation;
         }
 
         [Authorize(Roles = "Admin,Resident")]
@@ -496,6 +500,14 @@ namespace ApartmentManagementSystem.Controllers
 
             ValidateTenantPropertyOwner(resident);
 
+            resident.FlatNumber = resident.FlatNumber.Trim();
+            if (await _residentValidation.IsFlatNumberTakenAsync(resident.FlatNumber))
+            {
+                ModelState.AddModelError(
+                    nameof(model.FlatNumber),
+                    $"Flat {resident.FlatNumber} is already registered.");
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewBag.DefaultPasswordFormat = _accountService.DescribeDefaultPasswordFormat();
@@ -503,7 +515,6 @@ namespace ApartmentManagementSystem.Controllers
                 return View(model);
             }
 
-            resident.FlatNumber = resident.FlatNumber.Trim();
             NormalizePropertyOwnerName(resident);
             _context.Add(resident);
             await _context.SaveChangesAsync();
@@ -612,11 +623,18 @@ namespace ApartmentManagementSystem.Controllers
 
             ValidateTenantPropertyOwner(resident);
 
+            resident.FlatNumber = resident.FlatNumber.Trim();
+            if (await _residentValidation.IsFlatNumberTakenAsync(resident.FlatNumber, resident.Id))
+            {
+                ModelState.AddModelError(
+                    nameof(resident.FlatNumber),
+                    $"Flat {resident.FlatNumber} is already registered.");
+            }
+
             if (ModelState.IsValid)
             {
                 try
                 {
-                    resident.FlatNumber = resident.FlatNumber.Trim();
                     NormalizePropertyOwnerName(resident);
                     _context.Update(resident);
 
