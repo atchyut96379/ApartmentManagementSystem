@@ -1,3 +1,5 @@
+using ApartmentManagementSystem.Models;
+
 namespace ApartmentManagementSystem.Services
 {
     public static class FlatNumberHelper
@@ -16,6 +18,13 @@ namespace ApartmentManagementSystem.Services
                 ["509"] = "509-510",
                 ["510"] = "509-510"
             };
+
+        public static Resident? FindResidentForFlat(
+            IEnumerable<Resident> residents,
+            string? flatNumber)
+        {
+            return residents.FirstOrDefault(r => Match(r.FlatNumber, flatNumber));
+        }
 
         public static bool Match(string? maintenanceFlat, string? residentFlat)
         {

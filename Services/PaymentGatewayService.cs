@@ -343,8 +343,9 @@ namespace ApartmentManagementSystem.Services
             await _context.SaveChangesAsync();
 
             var residents = await _context.Residents.ToListAsync();
-            var resident = residents.FirstOrDefault(r =>
-                FlatNumberHelper.Match(r.FlatNumber, maintenance.FlatNumber));
+            var resident = FlatNumberHelper.FindResidentForFlat(
+                residents,
+                maintenance.FlatNumber);
             if (resident != null)
             {
                 await _notifications.SendPaymentConfirmationAsync(resident, maintenance);

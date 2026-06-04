@@ -136,8 +136,10 @@ namespace ApartmentManagementSystem.Services
                 return new SingleReminderResult { Error = "This flat is already marked paid." };
             }
 
-            var resident = await _context.Residents
-                .FirstOrDefaultAsync(r => FlatNumberHelper.Match(r.FlatNumber, maintenance.FlatNumber));
+            var residents = await _context.Residents.ToListAsync();
+            var resident = FlatNumberHelper.FindResidentForFlat(
+                residents,
+                maintenance.FlatNumber);
 
             if (resident == null)
             {
