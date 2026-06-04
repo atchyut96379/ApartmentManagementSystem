@@ -22,6 +22,12 @@ namespace ApartmentManagementSystem.Services
             }
         }
 
+        public static bool CountsAsInHouseOwner(ResidentMemberType memberType)
+        {
+            return memberType == ResidentMemberType.Owner ||
+                   memberType == ResidentMemberType.AssociationAdmin;
+        }
+
         public static string GetMemberTypeLabel(Resident resident)
         {
             return resident.MemberType switch

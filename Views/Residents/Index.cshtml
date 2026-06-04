@@ -19,28 +19,16 @@
 
 @if (ViewBag.IsSystemAdmin == true)
 {
-    <div class="alert alert-info mb-3">
-        <p class="mb-2">
-            You are logged in as system <code>Admin</code>. First <strong>import residents from Excel</strong>
-            (or restore your database). Then assign committee roles from that list, or use <strong>New person</strong>
-            on the committee page. Committee logins manage residents day to day after setup.
-        </p>
-        <a asp-action="Import" class="btn btn-success me-1">
-            <i class="fas fa-file-excel me-1"></i> Import from Excel
-        </a>
-        <a asp-action="DownloadTemplate" class="btn btn-outline-secondary me-1">Download template</a>
-        <a asp-action="Create" class="btn btn-outline-primary me-1">Add one resident</a>
-        <a asp-controller="Committee" asp-action="Index" class="btn btn-primary">
-            <i class="fas fa-user-shield me-1"></i> Committee accounts
-        </a>
+    <div class="mb-2 d-flex flex-wrap gap-2">
+        <a asp-action="Import" class="btn btn-sm btn-success">Import Excel</a>
+        <a asp-action="DownloadTemplate" class="btn btn-sm btn-outline-secondary">Template</a>
+        <a asp-action="Create" class="btn btn-sm btn-outline-primary">Add resident</a>
+        <a asp-controller="Committee" asp-action="Index" class="btn btn-sm btn-primary">Committee</a>
     </div>
 }
 else if (ViewBag.CanChangeDesignation == true)
 {
-    <p class="text-muted mb-2">
-        As <strong>President</strong> or <strong>Secretary</strong>, you can use <strong>Change role</strong> on any row
-        to assign Vice President, Treasurer, etc. (each role only once).
-    </p>
+    <p class="small text-muted mb-2">Change role per row (one committee role each).</p>
 }
 @if (ViewBag.CanManageResidents == true)
 {
@@ -58,7 +46,7 @@ else if (ViewBag.CanChangeDesignation == true)
 }
 else if (User.IsInRole("Resident"))
 {
-    <p class="text-muted">View-only list.</p>
+    <p class="small text-muted mb-2">View only.</p>
 }
 
 <table class="table table-bordered table-striped">

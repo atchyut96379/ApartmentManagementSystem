@@ -5,42 +5,22 @@
     var status = Model.Status;
 }
 
-<h2 class="mb-2">Email, SMS &amp; payment gateway</h2>
-<p class="text-muted">
-    Fill in the form below and click <strong>Save settings</strong>.
-    Credentials are stored in <code>integrations.local.json</code> on the server (not in git).
-</p>
+<h2 class="mb-3">Integrations</h2>
 
 <div class="card border-success mb-3">
-    <div class="card-header bg-success text-white">Enable real payments (Razorpay)</div>
-    <div class="card-body small">
-        <ol class="mb-2">
-            <li>Create a free account at <a href="https://dashboard.razorpay.com" target="_blank" rel="noopener">dashboard.razorpay.com</a>.</li>
-            <li>Go to <strong>Account &amp; Settings → API Keys</strong> → Generate <strong>Test</strong> keys (<code>rzp_test_...</code>).</li>
-            <li>Below, set <strong>Provider</strong> to <strong>Razorpay (live)</strong>, paste Key ID and Key Secret, then <strong>Save settings</strong>.</li>
-            <li>Residents open <strong>My payments → Pay</strong> — they will see <strong>Pay with Razorpay</strong> (not simulation).</li>
-            <li>Optional webhook (recommended on a public server): Razorpay → Webhooks → URL
-                <code>@(status.AppUrl.TrimEnd('/'))/api/razorpay/webhook</code> — event <code>payment.captured</code>.
-                Paste the webhook secret below.</li>
-            <li>When ready for real money, switch to <strong>Live</strong> keys in Razorpay and update keys here.</li>
-        </ol>
-        <p class="mb-2 small">
-            <strong>Razorpay asks for a website?</strong> Use your public app URL (not localhost) e.g.
-            <code>@(status.AppUrl.TrimEnd('/'))/Home/Public</code> — plus
-            <a href="/Home/Privacy" target="_blank">Privacy</a>,
-            <a href="/Home/Terms" target="_blank">Terms</a>,
-            <a href="/Home/Refund" target="_blank">Refund</a>.
-            For <strong>test API keys</strong> you can click <strong>Add later</strong> in Razorpay onboarding.
-        </p>
-        <p class="mb-0 text-muted">
-            Current payment mode:
+    <div class="card-header bg-success text-white py-2">Razorpay</div>
+    <div class="card-body small py-2">
+        <p class="mb-1">Test keys from <a href="https://dashboard.razorpay.com" target="_blank" rel="noopener">Razorpay</a> → paste below → Save.</p>
+        <p class="mb-1">Webhook (optional): <code>@(status.AppUrl.TrimEnd('/'))/api/razorpay/webhook</code></p>
+        <p class="mb-0">
+            Mode:
             @if (status.RazorpayReady)
             {
-                <span class="badge bg-success">Razorpay active</span>
+                <span class="badge bg-success">Razorpay</span>
             }
             else
             {
-                <span class="badge bg-secondary">Simulation (until Razorpay keys are saved)</span>
+                <span class="badge bg-secondary">Simulation</span>
             }
         </p>
     </div>
@@ -57,9 +37,7 @@
 
 @if (!Model.ConfigFileExists)
 {
-    <div class="alert alert-warning">
-        No saved settings yet. Complete the form and click <strong>Save settings</strong> once.
-    </div>
+    <div class="alert alert-warning py-2 small">No saved settings — save once below.</div>
 }
 
 <form asp-action="Save" method="post" class="card shadow mb-4">
@@ -180,10 +158,7 @@
                         <input asp-for="AppUrl" class="form-control" placeholder="https://localhost:7119" />
                     </div>
                 </div>
-                <p class="small text-muted mt-2 mb-1">
-                    <strong>Webhook URL</strong> (POST only — do not open in browser):
-                    <code class="d-block text-break">@status.WebhookUrl</code>
-                </p>
+                <p class="small text-muted mt-2 mb-1">Webhook: <code class="text-break">@status.WebhookUrl</code></p>
                 <span class="badge @(status.RazorpayReady ? "bg-success" : "bg-warning text-dark") me-1">
                     Razorpay: @(status.RazorpayReady ? "Live" : "Not ready")
                 </span>
@@ -229,10 +204,4 @@
     </div>
 </div>
 
-<div class="card shadow mt-4">
-    <div class="card-body small text-muted">
-        <strong>Gmail:</strong> Google Account → Security → 2-Step Verification → App passwords.<br />
-        <strong>MSG91:</strong> <a href="https://msg91.com" target="_blank" rel="noopener">msg91.com</a> → API keys &amp; sender ID.<br />
-        <strong>Razorpay webhook 405 in browser:</strong> Normal — Razorpay sends POST; paste URL only in Razorpay Dashboard → Webhooks.
-    </div>
-</div>
+<p class="small text-muted mt-3 mb-0">Gmail: app password. MSG91: auth key + sender ID.</p>
