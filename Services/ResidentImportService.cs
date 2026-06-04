@@ -195,17 +195,31 @@ namespace ApartmentManagementSystem.Services
             var result = new ResidentImportResult();
             var existingResidents = await _context.Residents.ToListAsync();
             var lastRow = GetLastDataRow(sheet);
+            var columns = ResolveTemplateColumnMap(sheet);
 
-            for (var rowNumber = 2; rowNumber <= lastRow; rowNumber++)
+            for (var rowNumber = columns.FirstDataRow; rowNumber <= lastRow; rowNumber++)
             {
-                var flatNumber = GetCellText(sheet, rowNumber, 1);
-                var residentName = GetCellText(sheet, rowNumber, 2);
-                var email = GetCellText(sheet, rowNumber, 3);
-                var phone = GetCellText(sheet, rowNumber, 4);
-                var residentType = GetCellText(sheet, rowNumber, 5);
-                var propertyOwnerName = GetCellText(sheet, rowNumber, 6);
+                var flatNumber = GetCellText(sheet, rowNumber, columns.FlatCol);
+                var residentName = GetCellText(sheet, rowNumber, columns.NameCol);
+                var email = columns.EmailCol > 0
+                    ? GetCellText(sheet, rowNumber, columns.EmailCol)
+                    : string.Empty;
+                var phone = columns.PhoneCol > 0
+                    ? GetCellText(sheet, rowNumber, columns.PhoneCol)
+                    : string.Empty;
+                var residentType = columns.TypeCol > 0
+                    ? GetCellText(sheet, rowNumber, columns.TypeCol)
+                    : string.Empty;
+                var propertyOwnerName = columns.PropertyOwnerCol > 0
+                    ? GetCellText(sheet, rowNumber, columns.PropertyOwnerCol)
+                    : string.Empty;
 
                 if (IsRowEmpty(flatNumber, residentName, email, phone, residentType, propertyOwnerName))
+                {
+                    continue;
+                }
+
+                if (ShouldSkipSerialAsFlat(sheet, rowNumber, columns.SerialCol, flatNumber))
                 {
                     continue;
                 }
@@ -234,6 +248,7 @@ namespace ApartmentManagementSystem.Services
             var existingResidents = await _context.Residents.ToListAsync();
             var lastRow = GetLastDataRow(sheet);
             var columnMap = ResolveColumnMap(sheet, lastRow);
+            columnMap = RefineSocietyColumnMap(sheet, columnMap);
             if (columnMap == null)
             {
                 result.SkippedCount = 1;
@@ -266,9 +281,7 @@ namespace ApartmentManagementSystem.Services
                 var residentName = columnMap.NameCol > 0
                     ? GetCellText(sheet, rowNumber, columnMap.NameCol)
                     : string.Empty;
-                var flatNumber = columnMap.FlatCol > 0
-                    ? GetCellText(sheet, rowNumber, columnMap.FlatCol)
-                    : string.Empty;
+                var flatNumber = ResolveFlatNumberForRow(sheet, rowNumber, columnMap);
 
                 if (LooksLikeFlatNumber(residentName) && LooksLikeName(flatNumber))
                 {
@@ -315,6 +328,18 @@ namespace ApartmentManagementSystem.Services
                         result.SkippedCount++;
                     }
 
+                    continue;
+                }
+
+                if (ShouldSkipMisplacedSerialRow(sheet, rowNumber, columnMap, flatNumber) ||
+                    IsSerialOnlyFlat(flatNumber, sheet, rowNumber, columnMap))
+                {
+                    RecordSkippedRow(
+                        result,
+                        rowNumber,
+                        flatNumber,
+                        residentName,
+                        "Flat number looks like S.No — check Excel has a Flat No column.");
                     continue;
                 }
 
@@ -462,7 +487,7 @@ namespace ApartmentManagementSystem.Services
                 {
                     map.TenantContactCol = col;
                 }
-                else if (IsFlatHeader(text) && map.FlatCol == 0)
+                else if (IsFlatHeader(text) && map.FlatCol == 0 && !IsSerialHeader(text))
                 {
                     map.FlatCol = col;
                 }
@@ -1018,8 +1043,24 @@ namespace ApartmentManagementSystem.Services
             !IsSerialHeader(text) &&
             (text is "name" or "resident name" or "member name" or "owner name" or "tenant name");
 
+        private static int DetectSerialColumnFromHeaders(IXLWorksheet sheet, int lastCol)
+        {
+            for (var row = 1; row <= 8; row++)
+            {
+                for (var col = 1; col <= lastCol; col++)
+                {
+                    if (IsSerialHeader(NormalizeHeaderText(GetCellText(sheet, row, col))))
+                    {
+                        return col;
+                    }
+                }
+            }
+
+            return 0;
+        }
+
         private static bool IsFlatHeader(string text) =>
-            text.Contains("flat") ||
+            (text.Contains("flat") && !IsSerialHeader(text)) ||
             text is "flat no" or "flat no." or "flat number" or "flat #";
 
         private static bool IsOwnerContactHeader(string text) =>
@@ -1205,7 +1246,266 @@ namespace ApartmentManagementSystem.Services
 
             var headerScore = ScoreMapAgainstData(sheet, headerMap, lastRow);
             var dataScore = ScoreMapAgainstData(sheet, dataMap, lastRow);
-            return dataScore >= headerScore ? dataMap : headerMap;
+            var chosen = dataScore >= headerScore ? dataMap : headerMap;
+            return RefineSocietyColumnMap(sheet, chosen);
+        }
+
+        private static SocietyColumnMap? RefineSocietyColumnMap(IXLWorksheet sheet, SocietyColumnMap? map)
+        {
+            if (map == null)
+            {
+                return null;
+            }
+
+            var lastCol = sheet.LastColumnUsed()?.ColumnNumber() ?? 12;
+
+            if (map.SerialCol > 0 && map.FlatCol == map.SerialCol)
+            {
+                map.FlatCol = 0;
+            }
+
+            if (map.FlatCol <= 0 || map.FlatCol == map.SerialCol)
+            {
+                for (var row = 1; row <= 8; row++)
+                {
+                    for (var col = 1; col <= lastCol; col++)
+                    {
+                        if (col == map.SerialCol)
+                        {
+                            continue;
+                        }
+
+                        var header = NormalizeHeaderText(GetCellText(sheet, row, col));
+                        if (IsFlatHeader(header))
+                        {
+                            map.FlatCol = col;
+                            map.HeaderRow = row;
+                            break;
+                        }
+                    }
+
+                    if (map.FlatCol > 0 && map.FlatCol != map.SerialCol)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (map.NameCol <= 0 || map.NameCol == map.SerialCol)
+            {
+                for (var row = 1; row <= 8; row++)
+                {
+                    for (var col = 1; col <= lastCol; col++)
+                    {
+                        if (col == map.SerialCol || col == map.FlatCol)
+                        {
+                            continue;
+                        }
+
+                        var header = NormalizeHeaderText(GetCellText(sheet, row, col));
+                        if (IsNameHeader(header))
+                        {
+                            map.NameCol = col;
+                            break;
+                        }
+                    }
+
+                    if (map.NameCol > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (map.FlatCol > 0 && map.NameCol > 0 && map.FlatCol != map.SerialCol)
+            {
+                return map;
+            }
+
+            return map.FlatCol > 0 && map.NameCol > 0 ? map : null;
+        }
+
+        private static string ResolveFlatNumberForRow(IXLWorksheet sheet, int row, SocietyColumnMap map)
+        {
+            if (map.FlatCol > 0 && map.FlatCol != map.SerialCol)
+            {
+                var fromFlatCol = GetCellText(sheet, row, map.FlatCol).Trim();
+                if (!string.IsNullOrWhiteSpace(fromFlatCol) &&
+                    !IsSerialOnlyFlat(fromFlatCol, sheet, row, map))
+                {
+                    return fromFlatCol;
+                }
+            }
+
+            var lastCol = sheet.LastColumnUsed()?.ColumnNumber() ?? 12;
+            for (var col = 1; col <= lastCol; col++)
+            {
+                if (col == map.SerialCol || col == map.NameCol)
+                {
+                    continue;
+                }
+
+                var text = GetCellText(sheet, row, col).Trim();
+                if (string.IsNullOrWhiteSpace(text) || IsSerialOnlyFlat(text, sheet, row, map))
+                {
+                    continue;
+                }
+
+                if (LooksLikeFlatNumber(text) && !LooksLikeName(text))
+                {
+                    return text;
+                }
+            }
+
+            return map.FlatCol > 0 ? GetCellText(sheet, row, map.FlatCol) : string.Empty;
+        }
+
+        private static bool IsSerialOnlyFlat(
+            string flatNumber,
+            IXLWorksheet sheet,
+            int row,
+            SocietyColumnMap map)
+        {
+            if (string.IsNullOrWhiteSpace(flatNumber))
+            {
+                return false;
+            }
+
+            if (ShouldSkipMisplacedSerialRow(sheet, row, map, flatNumber))
+            {
+                return true;
+            }
+
+            var trimmed = flatNumber.Trim();
+            if (!int.TryParse(trimmed, out var n) || n < 1 || n > 500)
+            {
+                return false;
+            }
+
+            if (map.SerialCol > 0 && map.FlatCol == map.SerialCol)
+            {
+                return true;
+            }
+
+            if (trimmed.Length <= 2 && map.SerialCol > 0)
+            {
+                var serial = GetCellText(sheet, row, map.SerialCol).Trim();
+                return trimmed == serial;
+            }
+
+            return false;
+        }
+
+        private sealed class TemplateColumnMap
+        {
+            public int HeaderRow { get; set; } = 1;
+            public int FirstDataRow { get; set; } = 2;
+            public int SerialCol { get; set; }
+            public int FlatCol { get; set; } = 1;
+            public int NameCol { get; set; } = 2;
+            public int EmailCol { get; set; } = 3;
+            public int PhoneCol { get; set; } = 4;
+            public int TypeCol { get; set; } = 5;
+            public int PropertyOwnerCol { get; set; } = 6;
+        }
+
+        private static TemplateColumnMap ResolveTemplateColumnMap(IXLWorksheet sheet)
+        {
+            var map = new TemplateColumnMap();
+            var lastCol = Math.Min(sheet.LastColumnUsed()?.ColumnNumber() ?? 6, 20);
+            var foundHeader = false;
+
+            for (var row = 1; row <= 5; row++)
+            {
+                var hasKnownHeader = false;
+
+                for (var col = 1; col <= lastCol; col++)
+                {
+                    var text = NormalizeHeaderText(GetCellText(sheet, row, col));
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        continue;
+                    }
+
+                    if (IsSerialHeader(text))
+                    {
+                        map.SerialCol = col;
+                        hasKnownHeader = true;
+                    }
+                    else if (text.Contains("flatnumber") || IsFlatHeader(text))
+                    {
+                        map.FlatCol = col;
+                        hasKnownHeader = true;
+                    }
+                    else if (text.Contains("residentname") || IsNameHeader(text))
+                    {
+                        map.NameCol = col;
+                        hasKnownHeader = true;
+                    }
+                    else if (text.Contains("notification") && text.Contains("email"))
+                    {
+                        map.EmailCol = col;
+                        hasKnownHeader = true;
+                    }
+                    else if (text.Contains("login") && text.Contains("mobile"))
+                    {
+                        map.PhoneCol = col;
+                        hasKnownHeader = true;
+                    }
+                    else if (text.Contains("residenttype") || text == "type")
+                    {
+                        map.TypeCol = col;
+                        hasKnownHeader = true;
+                    }
+                    else if (text.Contains("propertyowner"))
+                    {
+                        map.PropertyOwnerCol = col;
+                        hasKnownHeader = true;
+                    }
+                }
+
+                if (hasKnownHeader)
+                {
+                    map.HeaderRow = row;
+                    map.FirstDataRow = row + 1;
+                    foundHeader = true;
+                    break;
+                }
+            }
+
+            if (!foundHeader)
+            {
+                if (IsSerialHeader(NormalizeHeaderText(GetCellText(sheet, 1, 1))) &&
+                    IsNameHeader(NormalizeHeaderText(GetCellText(sheet, 1, 2))))
+                {
+                    map.SerialCol = 1;
+                    map.FlatCol = 3;
+                    map.NameCol = 2;
+                    map.FirstDataRow = 2;
+                }
+            }
+
+            if (map.SerialCol > 0 && map.FlatCol == map.SerialCol)
+            {
+                map.FlatCol = map.SerialCol == 1 && map.NameCol == 2 ? 3 : map.SerialCol + 1;
+            }
+
+            return map;
+        }
+
+        private static bool ShouldSkipSerialAsFlat(
+            IXLWorksheet sheet,
+            int rowNumber,
+            int serialCol,
+            string flatNumber)
+        {
+            if (serialCol <= 0 || string.IsNullOrWhiteSpace(flatNumber))
+            {
+                return false;
+            }
+
+            var serial = GetCellText(sheet, rowNumber, serialCol).Trim();
+            return flatNumber.Trim().Equals(serial, StringComparison.OrdinalIgnoreCase);
         }
 
         private static int ScoreMapAgainstData(IXLWorksheet sheet, SocietyColumnMap map, int lastRow)
@@ -1282,9 +1582,17 @@ namespace ApartmentManagementSystem.Services
                 }
             }
 
-            var flatCol = ArgMaxScore(flatScores, minScore: 2);
+            var serialCol = DetectSerialColumnFromHeaders(sheet, lastCol);
+
+            if (serialCol > 0)
+            {
+                flatScores[serialCol] = 0;
+                nameScores[serialCol] = 0;
+            }
+
+            var flatCol = ArgMaxScore(flatScores, minScore: 2, excludeCol: serialCol);
             var nameCol = ArgMaxScore(nameScores, minScore: 2, excludeCol: flatCol);
-            if (flatCol <= 0 || nameCol <= 0)
+            if (flatCol <= 0 || nameCol <= 0 || flatCol == serialCol)
             {
                 return null;
             }
@@ -1292,6 +1600,7 @@ namespace ApartmentManagementSystem.Services
             var map = new SocietyColumnMap
             {
                 HeaderRow = Math.Max(1, sampleStart - 2),
+                SerialCol = serialCol,
                 NameCol = nameCol,
                 FlatCol = flatCol,
                 OwnerCol = ArgMaxScore(ownerScores, minScore: 1),
