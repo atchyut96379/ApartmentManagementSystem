@@ -30,8 +30,11 @@
         </a>
         <a asp-action="DownloadTemplate" class="btn btn-outline-secondary me-1">Download template</a>
         <a asp-action="Create" class="btn btn-outline-primary me-1">Add one resident</a>
-        <a asp-controller="Committee" asp-action="Index" class="btn btn-primary">
+        <a asp-controller="Committee" asp-action="Index" class="btn btn-primary me-1">
             <i class="fas fa-user-shield me-1"></i> Committee accounts
+        </a>
+        <a asp-action="ResetSocietyData" class="btn btn-outline-danger">
+            Reset data (re-import)
         </a>
     </div>
 }

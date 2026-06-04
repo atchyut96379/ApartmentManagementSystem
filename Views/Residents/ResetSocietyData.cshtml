@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Reset society data";
+}
+
+<h1>Reset all society data</h1>
+
+<div class="alert alert-danger">
+    <p class="mb-2"><strong>This cannot be undone.</strong> On the cloud database it will delete:</p>
+    <ul class="mb-2">
+        <li>All residents (wrong flat numbers included)</li>
+        <li>All maintenance / payment records</li>
+        <li>All expenses</li>
+        <li>All committee and resident login accounts (except system <code>Admin</code>)</li>
+        <li>Activity log entries</li>
+    </ul>
+    <p class="mb-0">Use this before a fresh Excel import. Excel layout: <strong>SNO</strong> (column 1), <strong>Flat number</strong> (column 2), <strong>Name</strong> (column 3).</p>
+</div>
+
+<form asp-action="ResetSocietyDataConfirmed" method="post"
+      onsubmit="return confirm('Delete ALL residents and payments on this server?');">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-danger">Yes, clear everything and re-import</button>
+    <a asp-action="Import" class="btn btn-link">Cancel</a>
+</form>

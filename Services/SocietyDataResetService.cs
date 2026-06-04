@@ -17,6 +17,7 @@ namespace ApartmentManagementSystem.Services
             _context.Maintenances.RemoveRange(await _context.Maintenances.ToListAsync());
             _context.Expenses.RemoveRange(await _context.Expenses.ToListAsync());
             _context.Residents.RemoveRange(await _context.Residents.ToListAsync());
+            _context.AuditLogs.RemoveRange(await _context.AuditLogs.ToListAsync());
             await _context.SaveChangesAsync();
         }
     }

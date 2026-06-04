@@ -572,6 +572,11 @@ namespace ApartmentManagementSystem.Services
                 score += 6;
             }
 
+            if (map.SerialCol == 1 && map.FlatCol == 2 && map.NameCol >= 3)
+            {
+                score += 8;
+            }
+
             return score;
         }
 
@@ -1034,9 +1039,11 @@ namespace ApartmentManagementSystem.Services
 
         private static bool IsSerialHeader(string text)
         {
-            return text is "s.no" or "s no" or "s.no." or "s no." or "serial" or "serial no" or "serial no." or
+            return text is "s.no" or "s no" or "s.no." or "s no." or "sno" or "sno." or
+                   "serial" or "serial no" or "serial no." or
                    "sl no" or "sl.no" or "sl no." ||
-                   text.StartsWith("s.no", StringComparison.Ordinal);
+                   text.StartsWith("s.no", StringComparison.Ordinal) ||
+                   text.StartsWith("sno", StringComparison.Ordinal);
         }
 
         private static bool IsNameHeader(string text) =>
@@ -1317,12 +1324,58 @@ namespace ApartmentManagementSystem.Services
                 }
             }
 
+            ApplySnoFlatNameColumnLayout(sheet, map);
+
             if (map.FlatCol > 0 && map.NameCol > 0 && map.FlatCol != map.SerialCol)
             {
                 return map;
             }
 
             return map.FlatCol > 0 && map.NameCol > 0 ? map : null;
+        }
+
+        /// <summary>Common society sheet: col1 SNO, col2 Flat number, col3 Name.</summary>
+        private static void ApplySnoFlatNameColumnLayout(IXLWorksheet sheet, SocietyColumnMap map)
+        {
+            var headerRow = map.HeaderRow > 0 ? map.HeaderRow : 1;
+            var lastCol = sheet.LastColumnUsed()?.ColumnNumber() ?? 12;
+            var col1Header = headerRow <= 8
+                ? NormalizeHeaderText(GetCellText(sheet, headerRow, 1))
+                : string.Empty;
+            var col2Header = headerRow <= 8
+                ? NormalizeHeaderText(GetCellText(sheet, headerRow, 2))
+                : string.Empty;
+
+            var isSnoFlatNameLayout = IsSerialHeader(col1Header) &&
+                                      (IsFlatHeader(col2Header) ||
+                                       col2Header.Contains("flat") ||
+                                       map.SerialCol == 1);
+
+            if (!isSnoFlatNameLayout && map.SerialCol != 1)
+            {
+                return;
+            }
+
+            map.SerialCol = 1;
+            map.FlatCol = 2;
+
+            if (map.NameCol <= 0 || map.NameCol == 1 || map.NameCol == 2)
+            {
+                for (var col = 3; col <= Math.Min(lastCol, 8); col++)
+                {
+                    var h = NormalizeHeaderText(GetCellText(sheet, headerRow, col));
+                    if (IsNameHeader(h) || string.IsNullOrWhiteSpace(h))
+                    {
+                        map.NameCol = col;
+                        break;
+                    }
+                }
+
+                if (map.NameCol <= 0 || map.NameCol == map.FlatCol)
+                {
+                    map.NameCol = 3;
+                }
+            }
         }
 
         private static string ResolveFlatNumberForRow(IXLWorksheet sheet, int row, SocietyColumnMap map)
@@ -1591,7 +1644,27 @@ namespace ApartmentManagementSystem.Services
             }
 
             var flatCol = ArgMaxScore(flatScores, minScore: 2, excludeCol: serialCol);
+
+            if (serialCol == 1 && flatScores.Length > 2 && flatScores[2] >= 2)
+            {
+                flatCol = 2;
+            }
+
             var nameCol = ArgMaxScore(nameScores, minScore: 2, excludeCol: flatCol);
+            if (nameCol == serialCol || nameCol == flatCol)
+            {
+                nameCol = ArgMaxScore(nameScores, minScore: 1, excludeCol: flatCol);
+            }
+
+            if (serialCol == 1 && flatCol == 2 && (nameCol <= 0 || nameCol == 2))
+            {
+                nameCol = ArgMaxScore(nameScores, minScore: 1, excludeCol: 2);
+                if (nameCol <= 0 || nameCol == 2)
+                {
+                    nameCol = 3;
+                }
+            }
+
             if (flatCol <= 0 || nameCol <= 0 || flatCol == serialCol)
             {
                 return null;

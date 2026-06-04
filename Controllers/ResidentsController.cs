@@ -25,6 +25,8 @@ namespace ApartmentManagementSystem.Controllers
         private readonly CommitteeLoginProvisioningService _committeeProvisioning;
         private readonly LoginIdentityService _loginIdentity;
         private readonly AuditLogService _auditLog;
+        private readonly SocietyDataResetService _societyReset;
+        private readonly IdentitySeedService _identitySeed;
 
         public ResidentsController(
             ApplicationDbContext context,
@@ -38,7 +40,9 @@ namespace ApartmentManagementSystem.Controllers
             CommitteeAccessService committeeAccess,
             CommitteeLoginProvisioningService committeeProvisioning,
             LoginIdentityService loginIdentity,
-            AuditLogService auditLog)
+            AuditLogService auditLog,
+            SocietyDataResetService societyReset,
+            IdentitySeedService identitySeed)
         {
             _context = context;
             _billingService = billingService;
@@ -52,6 +56,8 @@ namespace ApartmentManagementSystem.Controllers
             _committeeProvisioning = committeeProvisioning;
             _loginIdentity = loginIdentity;
             _auditLog = auditLog;
+            _societyReset = societyReset;
+            _identitySeed = identitySeed;
         }
 
         [Authorize(Roles = "Admin,Resident")]
@@ -631,9 +637,42 @@ namespace ApartmentManagementSystem.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [RequireCommitteeAdmin]
-        public IActionResult Import()
+        public async Task<IActionResult> ResetSocietyData()
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (!_committeeAccess.IsSystemAdmin(user))
+            {
+                return Forbid();
+            }
+
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ResetSocietyDataConfirmed()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (!_committeeAccess.IsSystemAdmin(user))
+            {
+                return Forbid();
+            }
+
+            await _identitySeed.ResetAllUsersAndSeedSystemAdminAsync(_societyReset);
+
+            TempData["Success"] =
+                "All residents, maintenance, expenses, committee logins, and activity log were cleared. " +
+                "System Admin login is unchanged. Upload Excel again.";
+            return RedirectToAction(nameof(Import));
+        }
+
+        [Authorize(Roles = "Admin")]
+        [RequireCommitteeAdmin]
+        public async Task<IActionResult> Import()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            ViewBag.IsSystemAdmin = _committeeAccess.IsSystemAdmin(user);
             return View();
         }
 

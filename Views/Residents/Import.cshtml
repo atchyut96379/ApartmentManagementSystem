@@ -6,6 +6,18 @@
 
 <h1>Import Residents from Excel</h1>
 
+@if (ViewBag.IsSystemAdmin == true)
+{
+    <div class="alert alert-warning">
+        Wrong flats (1, 2, 3…) from a bad import?
+        <a asp-action="ResetSocietyData" class="btn btn-sm btn-danger ms-2"
+           onclick="return confirm('Clear all residents and payments first?');">
+            Reset cloud data
+        </a>
+        then import again (SNO col 1, Flat col 2, Name col 3).
+    </div>
+}
+
 <p>
     Upload a <strong>.xlsx</strong> file from <strong>Residents &gt; Import from Excel</strong>.
     The importer auto-detects the format from the first row.
@@ -17,10 +29,14 @@
         <h6>1. Standard template (sheet &quot;Residents&quot;)</h6>
         <p class="mb-2">Columns: FlatNumber, ResidentName, Phone (login mobile), Notification email (optional), ResidentType (Owner/Tenant), PropertyOwnerName.</p>
 
-        <h6>2. Society export (6–7 columns, 2 header rows) — matches your sheet</h6>
+        <h6>2. Society export — SNO + Flat in columns A &amp; B (your layout)</h6>
+        <p class="mb-2">
+            <strong>Row 1:</strong> SNO (or S.No) | <strong>Flat number</strong> | Name | … (type / contact columns after)<br />
+            Data row example: <code>1 | 101 | Rakesh Y | Owner | …</code> — flat is column <strong>2</strong>, not SNO.
+        </p>
+        <h6 class="mt-3">3. Society export (Name | Flat No first) — alternate layout</h6>
         <p class="mb-2">
             <strong>Row 1:</strong> Name | Flat No | Resident Type (merged over Owner+Tenant) | Owner Contact Number | Tenant Contact number<br />
-            <em>Optional:</em> S.No as first column — data may start in column A without serial numbers.<br />
             <strong>Row 2:</strong> (empty under Name, Flat) | Owner | Tenant | (contact columns may be empty)<br />
             <strong>Data from row 3:</strong> name, flat, mark Owner <em>or</em> Tenant in the type columns
             (<code>Owner</code>, <code>Tenant</code>, <code>X</code>, <code>Yes</code>, <code>1</code>, or a checkmark).
