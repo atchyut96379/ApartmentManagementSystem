@@ -1,5 +1,6 @@
 using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApartmentManagementSystem.Services
@@ -8,19 +9,36 @@ namespace ApartmentManagementSystem.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<MaintenanceBillingService> _logger;
 
         public MaintenanceBillingService(
             ApplicationDbContext context,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILogger<MaintenanceBillingService> logger)
         {
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public decimal DefaultMonthlyAmount =>
             _configuration.GetValue("Maintenance:DefaultMonthlyAmount", 1200m);
 
         public async Task EnsureMonthlyMaintenanceForAllResidentsAsync()
+        {
+            try
+            {
+                await EnsureMonthlyMaintenanceCoreAsync();
+            }
+            catch (Exception ex) when (ex is SqlException or DbUpdateException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Monthly maintenance generation skipped (database schema may need migration).");
+            }
+        }
+
+        private async Task EnsureMonthlyMaintenanceCoreAsync()
         {
             await NormalizeFlatNumbersAsync();
 

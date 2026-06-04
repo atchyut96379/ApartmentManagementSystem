@@ -46,6 +46,25 @@ namespace ApartmentManagementSystem.Controllers
         [Authorize]
         public async Task<IActionResult> Index()
         {
+            try
+            {
+                return await IndexCoreAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Dashboard failed to load.");
+                return View(
+                    "Error",
+                    new ErrorViewModel
+                    {
+                        RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+                        UserMessage = BuildErrorUserMessage(ex)
+                    });
+            }
+        }
+
+        private async Task<IActionResult> IndexCoreAsync()
+        {
             var user = await _userManager.GetUserAsync(User);
             if (user?.MustChangePassword == true)
             {
@@ -83,7 +102,7 @@ namespace ApartmentManagementSystem.Controllers
                     showReceiptColumns: false,
                     returnUrl: "/");
             }
-            else if (User.IsInRole("Admin"))
+            else if (User.IsInRole("Admin") && !SystemAdminConstants.IsSystemAdmin(user))
             {
                 var payments = await BuildResidentPaymentsViewModelAsync(
                     pendingOnly: true,

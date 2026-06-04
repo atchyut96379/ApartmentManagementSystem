@@ -1,14 +1,29 @@
+@using Microsoft.AspNetCore.Hosting
 @model ApartmentManagementSystem.Models.ErrorViewModel
+@inject IWebHostEnvironment HostEnvironment
 @{
     ViewData["Title"] = "Error";
 }
 
 <h1 class="text-danger">Error</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<p class="text-danger">An error occurred while processing your request.</p>
+
+@if (Model.ShowUserMessage)
+{
+    <div class="alert alert-warning">@Model.UserMessage</div>
+}
 
 @if (Model.ShowRequestId)
 {
-    <p>
+    <p class="small text-muted mb-0">
         <strong>Request ID:</strong> <code>@Model.RequestId</code>
+    </p>
+}
+
+@if (HostEnvironment.IsDevelopment())
+{
+    <hr />
+    <p class="small text-muted">
+        Check server logs for this Request ID. On Azure: App Service → Log stream.
     </p>
 }
