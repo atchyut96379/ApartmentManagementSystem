@@ -128,24 +128,24 @@ namespace ApartmentManagementSystem.Controllers
                 }
             }
 
-            if (!LoginIdentityService.IsValidLoginPhone(resident.PhoneNumber))
-            {
-                TempData["Error"] = "Add a valid mobile number (10+ digits) on the resident record before creating a login.";
-                return RedirectToAction(nameof(Edit), new { id = resident.Id });
-            }
-
             ViewBag.DefaultPassword =
                 _accountService.GenerateDefaultPassword(resident.FlatNumber);
             ViewBag.RepairingLegacyLogin =
                 await _loginIdentity.FindUserForResidentAsync(resident) != null;
+            ViewBag.NeedsLoginPhone =
+                !LoginIdentityService.IsValidLoginPhone(resident.PhoneNumber);
 
             var available = await GetAvailableCommitteeDesignationsAsync();
+            var loginPhone = LoginIdentityService.IsValidLoginPhone(resident.PhoneNumber)
+                ? LoginIdentityService.NormalizeLoginPhone(resident.PhoneNumber)
+                : (resident.PhoneNumber ?? string.Empty).Trim();
+
             return View(new CreateResidentLoginViewModel
             {
                 ResidentId = resident.Id,
                 ResidentName = resident.OwnerName,
                 FlatNumber = resident.FlatNumber,
-                PhoneNumber = LoginIdentityService.NormalizeLoginPhone(resident.PhoneNumber),
+                PhoneNumber = loginPhone,
                 NotificationEmail = string.IsNullOrWhiteSpace(resident.Email) ? null : resident.Email.Trim(),
                 GrantCommitteeAdminAccess = resident.MemberType == ResidentMemberType.AssociationAdmin,
                 AssociationDesignation = resident.AssociationDesignation,
@@ -558,8 +558,10 @@ namespace ApartmentManagementSystem.Controllers
                 return NotFound();
             }
 
+            var user = await _userManager.GetUserAsync(User);
             ViewBag.CanChangeDesignation =
                 await _committeeAccess.CanChangeCommitteeDesignationAsync(User);
+            ViewBag.IsSystemAdmin = _committeeAccess.IsSystemAdmin(user);
 
             return View(resident);
         }
@@ -626,6 +628,10 @@ namespace ApartmentManagementSystem.Controllers
 
                 return RedirectToAction(nameof(Index));
             }
+
+            var editUser = await _userManager.GetUserAsync(User);
+            ViewBag.CanChangeDesignation = canChangeDesignation;
+            ViewBag.IsSystemAdmin = _committeeAccess.IsSystemAdmin(editUser);
 
             return View(resident);
         }
@@ -1014,6 +1020,8 @@ namespace ApartmentManagementSystem.Controllers
                 _accountService.GenerateDefaultPassword(resident.FlatNumber);
             ViewBag.RepairingLegacyLogin =
                 await _loginIdentity.FindUserForResidentAsync(resident) != null;
+            ViewBag.NeedsLoginPhone =
+                !LoginIdentityService.IsValidLoginPhone(resident.PhoneNumber);
         }
 
         private static void NormalizePropertyOwnerName(Resident resident)

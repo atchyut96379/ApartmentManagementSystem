@@ -20,6 +20,14 @@
     </div>
 }
 
+@if (ViewBag.NeedsLoginPhone == true)
+{
+    <div class="alert alert-info">
+        Enter a valid <strong>10-digit mobile</strong> below (login username). You can also assign a
+        <strong>committee role</strong> here — tick <em>Grant committee admin access</em> and choose President, Secretary, etc.
+    </div>
+}
+
 <div class="card shadow col-md-7">
     <div class="card-body">
         <form asp-action="CreateLogin" method="post">

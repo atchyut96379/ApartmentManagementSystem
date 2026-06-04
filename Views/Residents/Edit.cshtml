@@ -6,6 +6,8 @@
     ViewData["Title"] = "Edit Resident";
     var designations = AssociationDesignations.All;
     var canChangeDesignation = ViewBag.CanChangeDesignation == true;
+    var isSystemAdmin = ViewBag.IsSystemAdmin == true;
+    var isTenant = Model.MemberType == ResidentMemberType.Tenant;
 }
 
 <h1>Edit Resident</h1>
@@ -51,6 +53,22 @@
                     on the Residents list (President and Secretary only).
                 </div>
             }
+            else if (isSystemAdmin)
+            {
+                <div class="alert alert-info">
+                    <strong>Committee roles</strong> (President, Secretary, etc.) are not set on this screen.
+                    @if (string.IsNullOrEmpty(Model.UserId))
+                    {
+                        <span>Use <a asp-action="CreateLogin" asp-route-id="@Model.Id"><strong>Create login</strong></a>
+                        and tick <em>Grant committee admin access</em> to pick a role.</span>
+                    }
+                    else
+                    {
+                        <span>Use <a asp-controller="Committee" asp-action="Index"><strong>Committee accounts</strong></a>
+                        or <a asp-action="ChangeDesignation" asp-route-id="@Model.Id">Change role</a> (if you are President/Secretary).</span>
+                    }
+                </div>
+            }
 
             <div class="form-group mb-3">
                 <label class="control-label">Member type</label>
@@ -83,7 +101,7 @@
                             <span class="text-muted">(@Model.AssociationDesignation)</span>
                         }
                     </p>
-                    <input type="hidden" asp-for="MemberType" />
+                    <input type="hidden" asp-for="MemberType" id="memberTypeValue" />
                     <input type="hidden" asp-for="AssociationDesignation" />
                 }
             </div>
@@ -103,7 +121,8 @@
                 </div>
             }
 
-            <div class="form-group mb-3" id="tenantFieldsGroup">
+            <div class="form-group mb-3" id="tenantFieldsGroup" style="@(isTenant ? "" : "display:none")">
+                <p class="text-muted small">Shown only for <strong>Tenant</strong> — property owner contact for the flat.</p>
                 <label asp-for="PropertyOwnerName" class="control-label"></label>
                 <input asp-for="PropertyOwnerName" class="form-control" />
                 <label asp-for="OwnerContactNumber" class="control-label mt-2"></label>
@@ -136,15 +155,23 @@
 
         function selectedMemberType() {
             const checked = document.querySelector('.member-type:checked');
-            return checked ? checked.value : '@((int)ResidentMemberType.Owner)';
+            if (checked) {
+                return checked.value;
+            }
+            const hidden = document.getElementById('memberTypeValue');
+            return hidden ? hidden.value : '@((int)ResidentMemberType.Owner)';
         }
 
         function toggleMemberFields() {
             const type = selectedMemberType();
-            document.getElementById('designationGroup').style.display =
-                type === assocAdmin ? 'block' : 'none';
-            document.getElementById('tenantFieldsGroup').style.display =
-                type === tenant ? 'block' : 'none';
+            const designationGroup = document.getElementById('designationGroup');
+            if (designationGroup) {
+                designationGroup.style.display = type === assocAdmin ? 'block' : 'none';
+            }
+            const tenantGroup = document.getElementById('tenantFieldsGroup');
+            if (tenantGroup) {
+                tenantGroup.style.display = type === tenant ? 'block' : 'none';
+            }
         }
 
         document.querySelectorAll('.member-type').forEach(el =>
