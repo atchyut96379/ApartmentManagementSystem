@@ -46,7 +46,8 @@ namespace ApartmentManagementSystem.Services
                     .Distinct()
                     .Count(),
                 TotalOwners = _context.Residents.Count(r =>
-                    ResidentMemberHelper.CountsAsInHouseOwner(r.MemberType)),
+                    r.MemberType == ResidentMemberType.Owner ||
+                    r.MemberType == ResidentMemberType.AssociationAdmin),
                 TotalTenants = _context.Residents.Count(r =>
                     r.MemberType == ResidentMemberType.Tenant),
                 TotalAssociationAdmins = _context.Residents.Count(r =>
