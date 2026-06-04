@@ -28,7 +28,14 @@ namespace ApartmentManagementSystem.Services
                         .GetRequiredService<IntegrationsSettingsStore>();
                     var notificationSettings = settingsStore.GetNotificationSettings();
 
+                    if (notificationSettings.UseWhatsAppClickToChatForReminders)
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
+                        continue;
+                    }
+
                     if (notificationSettings.EnableScheduledReminders &&
+                        notificationSettings.CanAutomatePaymentReminders &&
                         DateTime.Now.Hour == notificationSettings.ReminderHourLocal &&
                         _lastRunDate != DateTime.Today)
                     {
@@ -37,9 +44,10 @@ namespace ApartmentManagementSystem.Services
                         var result = await notifications.SendPendingPaymentRemindersAsync();
                         _lastRunDate = DateTime.Today;
                         _logger.LogInformation(
-                            "Payment reminders sent. Email={Email}, SMS={Sms}, Skipped={Skipped}",
+                            "Payment reminders sent. Email={Email}, SMS={Sms}, WhatsApp={WhatsApp}, Skipped={Skipped}",
                             result.EmailSent,
                             result.SmsSent,
+                            result.WhatsAppSent,
                             result.Skipped);
                     }
                 }

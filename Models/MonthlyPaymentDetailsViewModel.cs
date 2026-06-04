@@ -25,6 +25,8 @@ namespace ApartmentManagementSystem.Models
         public bool CanSendReminders { get; set; }
 
         public bool CanManagePayments { get; set; }
+
+        public bool UseWhatsAppClickToChat { get; set; }
     }
 
     public class MonthlyPaymentRowViewModel
@@ -56,5 +58,9 @@ namespace ApartmentManagementSystem.Models
         public string? ReceiptNumber { get; set; }
 
         public DateTime? PaidAt { get; set; }
+
+        public string? ResidentPhone { get; set; }
+
+        public string? WhatsAppReminderUrl { get; set; }
     }
 }

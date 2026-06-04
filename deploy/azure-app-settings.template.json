@@ -24,5 +24,12 @@
   "Notification__SmsProvider": "Msg91",
   "Notification__Msg91AuthKey": "YOUR_MSG91_AUTH_KEY",
   "Notification__Msg91SenderId": "YOUR6C",
-  "Notification__Msg91FlowId": "YOUR_MSG91_FLOW_TEMPLATE_ID"
+  "Notification__Msg91FlowId": "YOUR_MSG91_FLOW_TEMPLATE_ID",
+  "Notification__EnableWhatsAppReminders": "true",
+  "Notification__WhatsAppProvider": "ClickToChat",
+  "Notification__Msg91WhatsAppApiEnabled": "false",
+  "Notification__Msg91WhatsAppIntegratedNumber": "",
+  "Notification__Msg91WhatsAppTemplateName": "",
+  "Notification__Msg91WhatsAppTemplateLanguage": "en",
+  "Notification__Msg91WhatsAppTemplateNamespace": ""
 }

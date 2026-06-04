@@ -145,6 +145,28 @@ namespace ApartmentManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TestWhatsApp(string testPhone)
+        {
+            if (!await CanManageIntegrationsAsync())
+            {
+                return Forbid();
+            }
+
+            if (string.IsNullOrWhiteSpace(testPhone))
+            {
+                TempData["Error"] = "Enter a mobile number for the WhatsApp test.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var (ok, err) = await _notifications.SendTestWhatsAppAsync(testPhone.Trim());
+            TempData[ok ? "Success" : "Error"] = ok
+                ? $"Test WhatsApp API request accepted for {testPhone}. Check the phone and MSG91 → WhatsApp → Logs."
+                : err ?? "WhatsApp send failed.";
+            return RedirectToAction(nameof(Index));
+        }
+
         private async Task<bool> CanManageIntegrationsAsync()
         {
             if (!User.IsInRole("Admin"))

@@ -19,6 +19,10 @@ namespace ApartmentManagementSystem.Services
             var emailReady = notification.IsEmailConfigured;
             var smsReady = notification.IsSmsConfigured;
             var smsSimulation = notification.IsSimulationSms;
+            var whatsAppReady = notification.EnableWhatsAppReminders &&
+                                (notification.IsClickToChatWhatsApp ||
+                                 notification.IsMsg91WhatsAppConfigured ||
+                                 notification.IsSimulationWhatsApp);
             var razorpayReady = payment.Provider.Equals("Razorpay", StringComparison.OrdinalIgnoreCase) &&
                                 payment.Razorpay.IsConfigured;
 
@@ -37,6 +41,18 @@ namespace ApartmentManagementSystem.Services
                         : smsReady
                             ? $"{notification.SmsProvider} configured — add Flow ID for India delivery"
                             : "Enable SMS, add MSG91 Auth Key + Sender ID, Save (or Azure app settings).",
+                WhatsAppReady = whatsAppReady,
+                WhatsAppApiReady = notification.IsMsg91WhatsAppConfigured,
+                WhatsAppProvider = notification.WhatsAppProvider,
+                WhatsAppStatus = notification.UseWhatsAppClickToChatForReminders
+                    ? "Click-to-Chat — WhatsApp buttons on Collection dashboard (tap Send on association phone). MSG91 API paused until templates appear in Send WhatsApp."
+                    : notification.IsSimulationWhatsApp
+                        ? "WhatsApp simulation (no real message)."
+                        : notification.IsMsg91WhatsAppConfigured
+                            ? "MSG91 WhatsApp API enabled for automatic reminders."
+                            : notification.EnableWhatsAppReminders
+                                ? "Enable MSG91 WhatsApp API below after templates work in MSG91."
+                                : "Enable WhatsApp reminders below.",
                 PaymentProvider = payment.Provider,
                 RazorpayReady = razorpayReady,
                 RazorpayStatus = razorpayReady

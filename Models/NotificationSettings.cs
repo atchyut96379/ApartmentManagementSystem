@@ -44,6 +44,28 @@ namespace ApartmentManagementSystem.Models
         /// <summary>MSG91 Flow / Template ID (India DLT). Required for delivery on most Indian accounts.</summary>
         public string Msg91FlowId { get; set; } = string.Empty;
 
+        /// <summary>Payment reminders via WhatsApp (recommended while SMS DLT is pending).</summary>
+        public bool EnableWhatsAppReminders { get; set; } = true;
+
+        /// <summary>ClickToChat (open wa.me — uses association WhatsApp), Msg91 (API), or Simulation.</summary>
+        public string WhatsAppProvider { get; set; } = "ClickToChat";
+
+        /// <summary>MSG91 WhatsApp Business integrated number with country code, e.g. 9198xxxxxxxx.</summary>
+        public string Msg91WhatsAppIntegratedNumber { get; set; } = string.Empty;
+
+        public string Msg91WhatsAppTemplateName { get; set; } = string.Empty;
+
+        public string Msg91WhatsAppTemplateLanguage { get; set; } = "en";
+
+        /// <summary>Optional Meta template namespace from MSG91 template details.</summary>
+        public string Msg91WhatsAppTemplateNamespace { get; set; } = string.Empty;
+
+        /// <summary>
+        /// When false (default), reminders use Click-to-Chat links only — no MSG91 WhatsApp API.
+        /// Turn on after templates appear in MSG91 Send WhatsApp dropdown.
+        /// </summary>
+        public bool Msg91WhatsAppApiEnabled { get; set; }
+
         public bool IsEmailConfigured =>
             EnableEmail &&
             !string.IsNullOrWhiteSpace(SmtpHost) &&
@@ -73,5 +95,30 @@ namespace ApartmentManagementSystem.Models
 
         public bool IsSmsConfigured =>
             IsTwilioConfigured || IsMsg91Configured || IsSimulationSms;
+
+        public bool IsClickToChatWhatsApp =>
+            EnableWhatsAppReminders &&
+            WhatsAppProvider.Equals("ClickToChat", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Manual WhatsApp from association phone (wa.me) — used while MSG91 templates are unavailable.</summary>
+        public bool UseWhatsAppClickToChatForReminders =>
+            EnableWhatsAppReminders &&
+            (IsClickToChatWhatsApp || !Msg91WhatsAppApiEnabled);
+
+        public bool IsSimulationWhatsApp =>
+            EnableWhatsAppReminders &&
+            WhatsAppProvider.Equals("Simulation", StringComparison.OrdinalIgnoreCase);
+
+        public bool IsMsg91WhatsAppConfigured =>
+            EnableWhatsAppReminders &&
+            Msg91WhatsAppApiEnabled &&
+            WhatsAppProvider.Equals("Msg91", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(Msg91AuthKey) &&
+            !string.IsNullOrWhiteSpace(Msg91WhatsAppIntegratedNumber) &&
+            !string.IsNullOrWhiteSpace(Msg91WhatsAppTemplateName);
+
+        public bool CanAutomatePaymentReminders =>
+            IsMsg91WhatsAppConfigured ||
+            (IsSmsConfigured && !IsSimulationSms && IsMsg91FlowConfigured);
     }
 }

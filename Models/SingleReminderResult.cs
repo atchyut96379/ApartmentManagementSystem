@@ -9,5 +9,11 @@ namespace ApartmentManagementSystem.Models
         public string? FlatNumber { get; set; }
 
         public string? ResidentName { get; set; }
+
+        public bool UseWhatsAppRedirect { get; set; }
+
+        public string? WhatsAppUrl { get; set; }
+
+        public string? Channel { get; set; }
     }
 }

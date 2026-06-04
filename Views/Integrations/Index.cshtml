@@ -138,6 +138,50 @@
                 </span>
             </div>
 
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2">WhatsApp reminders</h5>
+                <div class="form-check mb-2">
+                    <input asp-for="EnableWhatsAppReminders" class="form-check-input" />
+                    <label asp-for="EnableWhatsAppReminders" class="form-check-label"></label>
+                </div>
+                <div class="mb-2">
+                    <label asp-for="WhatsAppProvider" class="form-label">Provider</label>
+                    <select asp-for="WhatsAppProvider" class="form-select">
+                        <option value="ClickToChat">Click-to-Chat (recommended — opens association WhatsApp)</option>
+                        <option value="Msg91">MSG91 (for automatic API when ready)</option>
+                        <option value="Simulation">Simulation (test only)</option>
+                    </select>
+                </div>
+                <div class="form-check mb-2">
+                    <input asp-for="Msg91WhatsAppApiEnabled" class="form-check-input" />
+                    <label asp-for="Msg91WhatsAppApiEnabled" class="form-check-label"></label>
+                    <div class="form-text small">
+                        Leave off while MSG91 Send WhatsApp shows &quot;No Template Found&quot;. Reminders use green WhatsApp links on the collection dashboard instead.
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Msg91WhatsAppIntegratedNumber" class="form-label"></label>
+                    <input asp-for="Msg91WhatsAppIntegratedNumber" class="form-control" placeholder="9198xxxxxxxx" />
+                    <div class="form-text small">MSG91 → WhatsApp → your connected business number.</div>
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Msg91WhatsAppTemplateName" class="form-label"></label>
+                    <input asp-for="Msg91WhatsAppTemplateName" class="form-control" placeholder="approved_template_name" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Msg91WhatsAppTemplateLanguage" class="form-label">Template language code</label>
+                    <input asp-for="Msg91WhatsAppTemplateLanguage" class="form-control" placeholder="en" />
+                </div>
+                <div class="mb-2">
+                    <label asp-for="Msg91WhatsAppTemplateNamespace" class="form-label"></label>
+                    <input asp-for="Msg91WhatsAppTemplateNamespace" class="form-control" placeholder="Only if MSG91 template details show namespace" />
+                </div>
+                <p class="small text-muted mb-2">@status.WhatsAppStatus</p>
+                <span class="badge @(status.WhatsAppReady ? "bg-success" : "bg-warning text-dark")">
+                    WhatsApp: @(status.WhatsAppReady ? "Ready" : "Not configured")
+                </span>
+            </div>
+
             <div class="col-12">
                 <h5 class="border-bottom pb-2">Razorpay payment gateway</h5>
                 <div class="row g-2">
@@ -210,6 +254,21 @@
             </div>
         </div>
     </div>
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body">
+                <h5>Test WhatsApp (MSG91 API)</h5>
+                <form asp-action="TestWhatsApp" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="text" name="testPhone" class="form-control mb-2" placeholder="10-digit mobile to receive test" required />
+                    <button type="submit" class="btn btn-sm btn-outline-success" @(status.WhatsAppApiReady ? "" : "disabled")>
+                        Send test WhatsApp
+                    </button>
+                </form>
+                <p class="small text-muted mb-0 mt-2">Requires provider <strong>Msg91</strong>, approved template, and number 919063920689. Then check MSG91 → WhatsApp → Logs.</p>
+            </div>
+        </div>
+    </div>
 </div>
 
-<p class="small text-muted mt-3 mb-0">Gmail: app password. MSG91: auth key + sender ID.</p>
+<p class="small text-muted mt-3 mb-0">Gmail: app password. MSG91: auth key + sender ID. WhatsApp: template name must match MSG91 exactly.</p>

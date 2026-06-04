@@ -9,15 +9,24 @@ namespace ApartmentManagementSystem.Services
         private readonly ApplicationDbContext _context;
         private readonly MaintenanceBillingService _billingService;
         private readonly MaintenanceFineService _fineService;
+        private readonly IntegrationsSettingsStore _settingsStore;
+        private readonly PaymentReminderMessageBuilder _reminderMessages;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public MonthlyPaymentDetailsService(
             ApplicationDbContext context,
             MaintenanceBillingService billingService,
-            MaintenanceFineService fineService)
+            MaintenanceFineService fineService,
+            IntegrationsSettingsStore settingsStore,
+            PaymentReminderMessageBuilder reminderMessages,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _billingService = billingService;
             _fineService = fineService;
+            _settingsStore = settingsStore;
+            _reminderMessages = reminderMessages;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public Task<MonthlyPaymentDetailsViewModel> BuildCurrentMonthAsync() =>
@@ -40,6 +49,11 @@ namespace ApartmentManagementSystem.Services
                 .ToListAsync();
 
             var rows = new List<MonthlyPaymentRowViewModel>();
+            var notification = _settingsStore.GetNotificationSettings();
+            var useWhatsAppClick = notification.UseWhatsAppClickToChatForReminders;
+            var payUrl = _reminderMessages.BuildPayUrl(
+                _settingsStore,
+                _httpContextAccessor.HttpContext?.Request);
 
             foreach (var resident in residents)
             {
@@ -60,12 +74,25 @@ namespace ApartmentManagementSystem.Services
                         ? "Tenant"
                         : "Owner";
 
+                var isPaid = maintenance?.PaymentStatus == true;
+                string? whatsAppUrl = null;
+                if (!isPaid && useWhatsAppClick && maintenance != null)
+                {
+                    var text = _reminderMessages.BuildReminderText(
+                        resident.OwnerName,
+                        maintenance.Month,
+                        payUrl);
+                    whatsAppUrl = _reminderMessages.BuildClickToChatUrl(resident.PhoneNumber, text);
+                }
+
                 rows.Add(new MonthlyPaymentRowViewModel
                 {
                     MaintenanceId = maintenance?.Id,
                     ResidentId = resident.Id,
                     FlatNumber = flat,
                     ResidentName = resident.OwnerName,
+                    ResidentPhone = resident.PhoneNumber,
+                    WhatsAppReminderUrl = whatsAppUrl,
                     MemberLabel = memberLabel,
                     Amount = amount,
                     Fine = maintenance?.PaymentStatus == true
@@ -74,7 +101,7 @@ namespace ApartmentManagementSystem.Services
                     TotalDue = maintenance?.PaymentStatus == true
                         ? maintenance.TotalPaidAmount
                         : totalDue,
-                    IsPaid = maintenance?.PaymentStatus == true,
+                    IsPaid = isPaid,
                     TransactionId = maintenance?.TransactionId,
                     PayerName = maintenance?.PayerName,
                     PaymentGateway = maintenance?.PaymentGateway,
@@ -97,7 +124,8 @@ namespace ApartmentManagementSystem.Services
                     ? 0
                     : Math.Round((decimal)rows.Count(r => r.IsPaid) / rows.Count * 100, 1),
                 AvailablePeriods = BillingMonthHelper.GetRecentBillingPeriods(),
-                Rows = rows
+                Rows = rows,
+                UseWhatsAppClickToChat = useWhatsAppClick
             };
         }
     }

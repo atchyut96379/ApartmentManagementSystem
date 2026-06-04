@@ -2,6 +2,7 @@ using ApartmentManagementSystem.Data;
 using ApartmentManagementSystem.Models;
 using ApartmentManagementSystem.Services.Email;
 using ApartmentManagementSystem.Services.Sms;
+using ApartmentManagementSystem.Services.WhatsApp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -12,6 +13,8 @@ namespace ApartmentManagementSystem.Services
         public int EmailSent { get; set; }
 
         public int SmsSent { get; set; }
+
+        public int WhatsAppSent { get; set; }
 
         public int Skipped { get; set; }
 
@@ -27,6 +30,8 @@ namespace ApartmentManagementSystem.Services
         private readonly SocietySettings _society;
         private readonly SmtpEmailSender _emailSender;
         private readonly SmsSenderService _smsSender;
+        private readonly WhatsAppSenderService _whatsAppSender;
+        private readonly PaymentReminderMessageBuilder _reminderMessages;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<PaymentNotificationService> _logger;
 
@@ -38,6 +43,8 @@ namespace ApartmentManagementSystem.Services
             IOptions<SocietySettings> society,
             SmtpEmailSender emailSender,
             SmsSenderService smsSender,
+            WhatsAppSenderService whatsAppSender,
+            PaymentReminderMessageBuilder reminderMessages,
             IHttpContextAccessor httpContextAccessor,
             ILogger<PaymentNotificationService> logger)
         {
@@ -48,6 +55,8 @@ namespace ApartmentManagementSystem.Services
             _society = society.Value;
             _emailSender = emailSender;
             _smsSender = smsSender;
+            _whatsAppSender = whatsAppSender;
+            _reminderMessages = reminderMessages;
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
@@ -64,7 +73,13 @@ namespace ApartmentManagementSystem.Services
             var result = new PaymentNotificationResult();
             var (resolvedYear, resolvedMonth) = BillingMonthHelper.ResolvePeriod(year, month);
             var payUrl = BuildPayUrl();
-            var associationName = GetAssociationSmsName();
+            var notification = _settingsStore.GetNotificationSettings();
+            if (notification.UseWhatsAppClickToChatForReminders)
+            {
+                result.Errors.Add(
+                    "Use the green WhatsApp link on each pending flat (association phone → tap Send). MSG91 API is off until templates work in MSG91.");
+                return result;
+            }
 
             var residents = await _context.Residents.ToListAsync();
             var maintenances = (await _context.Maintenances
@@ -91,10 +106,9 @@ namespace ApartmentManagementSystem.Services
                 var sms = BuildReminderSmsMessage(
                     resident.OwnerName,
                     maintenance.Month,
-                    payUrl,
-                    associationName);
+                    payUrl);
 
-                await SendPaymentReminderSmsAsync(resident, sms, result);
+                await SendPaymentReminderAsync(resident, maintenance.Month, payUrl, sms, result);
             }
 
             return result;
@@ -124,28 +138,59 @@ namespace ApartmentManagementSystem.Services
             }
 
             var payUrl = BuildPayUrl();
-            var associationName = GetAssociationSmsName();
             var sms = BuildReminderSmsMessage(
                 resident.OwnerName,
                 maintenance.Month,
-                payUrl,
-                associationName);
+                payUrl);
+
+            var notification = _settingsStore.GetNotificationSettings();
+            if (notification.UseWhatsAppClickToChatForReminders)
+            {
+                var text = _reminderMessages.BuildReminderText(
+                    resident.OwnerName,
+                    maintenance.Month,
+                    payUrl);
+                var waUrl = _reminderMessages.BuildClickToChatUrl(resident.PhoneNumber, text);
+                if (waUrl == null)
+                {
+                    return new SingleReminderResult
+                    {
+                        Error = "Add login mobile on Residents for this flat, then use WhatsApp."
+                    };
+                }
+
+                return new SingleReminderResult
+                {
+                    Sent = true,
+                    UseWhatsAppRedirect = true,
+                    WhatsAppUrl = waUrl,
+                    FlatNumber = resident.FlatNumber,
+                    ResidentName = resident.OwnerName
+                };
+            }
 
             var result = new PaymentNotificationResult();
-            var sent = await SendPaymentReminderSmsAsync(resident, sms, result);
+            var sent = await SendPaymentReminderAsync(
+                resident,
+                maintenance.Month,
+                payUrl,
+                sms,
+                result);
 
             if (!sent)
             {
                 return new SingleReminderResult
                 {
                     Error = result.Errors.FirstOrDefault() ??
-                            "SMS could not be sent. Add login mobile on the resident and configure MSG91 under Integrations."
+                            "Reminder could not be sent. Add login mobile and check Integrations."
                 };
             }
 
+            var channel = result.WhatsAppSent > 0 ? "WhatsApp" : "SMS";
             return new SingleReminderResult
             {
                 Sent = true,
+                Channel = channel,
                 FlatNumber = resident.FlatNumber,
                 ResidentName = resident.OwnerName
             };
@@ -202,25 +247,32 @@ namespace ApartmentManagementSystem.Services
                 $"{apartmentName}: Test SMS from apartment portal. SMS integration is working.");
         }
 
-        private string BuildPayUrl()
+        public async Task<(bool Success, string? Error)> SendTestWhatsAppAsync(string phone)
         {
-            var appUrl = _settingsStore.GetApplicationSettings()
-                .GetAppUrl(_httpContextAccessor.HttpContext?.Request);
-
-            return $"{appUrl.TrimEnd('/')}/ResidentPayments/MyPayments";
-        }
-
-        private string GetAssociationSmsName()
-        {
-            var name = (_society.ApartmentName ?? "Marvel").Trim();
-            if (name.EndsWith("association", StringComparison.OrdinalIgnoreCase))
+            var settings = _settingsStore.GetNotificationSettings();
+            if (settings.UseWhatsAppClickToChatForReminders)
             {
-                return name;
+                return (false,
+                    "MSG91 WhatsApp API is off. Use WhatsApp links on the collection dashboard, or enable API in Integrations after MSG91 shows templates.");
             }
 
-            var shortName = name.Replace(" Rocks", "", StringComparison.OrdinalIgnoreCase).Trim();
-            return $"{shortName} association";
+            var payUrl = BuildPayUrl();
+            var vars = _reminderMessages.BuildTemplateVariables("Test Resident", "June 2026", payUrl);
+            var body = _reminderMessages.BuildReminderSmsBody("Test Resident", "June 2026", payUrl);
+
+            return await _whatsAppSender.SendReminderAsync(phone.Trim(), vars, body);
         }
+
+        private string BuildPayUrl() =>
+            _reminderMessages.BuildPayUrl(
+                _settingsStore,
+                _httpContextAccessor.HttpContext?.Request);
+
+        private string BuildReminderSmsMessage(
+            string residentName,
+            string month,
+            string payUrl) =>
+            _reminderMessages.BuildReminderSmsBody(residentName, month, payUrl);
 
         private static string GetFirstName(string residentName)
         {
@@ -234,67 +286,57 @@ namespace ApartmentManagementSystem.Services
             return firstName;
         }
 
-        private static string ExtractMonthFromReminderBody(string smsBody)
-        {
-            const string marker = "Still ";
-            var start = smsBody.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-            if (start < 0)
-            {
-                return "this month";
-            }
-
-            start += marker.Length;
-            var end = smsBody.IndexOf(" maintenance", start, StringComparison.OrdinalIgnoreCase);
-            return end > start ? smsBody[start..end].Trim() : "this month";
-        }
-
-        private static string ExtractPayUrlFromReminderBody(string smsBody)
-        {
-            const string marker = "Pay: ";
-            var start = smsBody.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-            if (start < 0)
-            {
-                return string.Empty;
-            }
-
-            start += marker.Length;
-            var end = smsBody.IndexOf('\n', start);
-            return end > start ? smsBody[start..end].Trim() : smsBody[start..].Trim();
-        }
-
-        private static string BuildReminderSmsMessage(
-            string residentName,
+        private async Task<bool> SendPaymentReminderAsync(
+            Resident resident,
             string month,
             string payUrl,
-            string associationName)
-        {
-            var firstName = GetFirstName(residentName);
-
-            return
-                $"Hi {firstName},\n" +
-                $"Still {month} maintenance is pending.\n" +
-                $"Pay: {payUrl}\n" +
-                $"From {associationName}";
-        }
-
-        private async Task<bool> SendPaymentReminderSmsAsync(
-            Resident resident,
             string smsBody,
             PaymentNotificationResult result)
         {
             if (string.IsNullOrWhiteSpace(resident.PhoneNumber))
             {
                 result.Errors.Add(
-                    $"Flat {resident.FlatNumber}: Add login mobile on Residents list for SMS reminders.");
+                    $"Flat {resident.FlatNumber}: Add login mobile on Residents list for reminders.");
+                result.Skipped++;
+                return false;
+            }
+
+            var settings = _settingsStore.GetNotificationSettings();
+            var templateVars = _reminderMessages.BuildTemplateVariables(
+                resident.OwnerName,
+                month,
+                payUrl);
+
+            if (settings.EnableWhatsAppReminders &&
+                (settings.IsMsg91WhatsAppConfigured || settings.IsSimulationWhatsApp))
+            {
+                var (waOk, waErr) = await _whatsAppSender.SendReminderAsync(
+                    resident.PhoneNumber.Trim(),
+                    templateVars,
+                    smsBody);
+                if (waOk)
+                {
+                    result.WhatsAppSent++;
+                    return true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(waErr))
+                {
+                    result.Errors.Add($"Flat {resident.FlatNumber}: {waErr}");
+                }
+            }
+
+            if (!settings.EnableSms)
+            {
                 result.Skipped++;
                 return false;
             }
 
             var flowVars = new Dictionary<string, string>
             {
-                ["name"] = GetFirstName(resident.OwnerName),
-                ["month"] = ExtractMonthFromReminderBody(smsBody),
-                ["link"] = ExtractPayUrlFromReminderBody(smsBody)
+                ["name"] = templateVars["name"],
+                ["month"] = templateVars["month"],
+                ["link"] = templateVars["link"]
             };
 
             var (ok, err) = await _smsSender.SendAsync(

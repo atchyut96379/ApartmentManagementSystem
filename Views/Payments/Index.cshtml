@@ -67,16 +67,25 @@
 @if (Model.CanSendReminders)
 {
     <div class="mb-3">
-        <form asp-action="SendReminders" method="post" class="d-inline">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="year" value="@Model.Year" />
-            <input type="hidden" name="month" value="@Model.Month" />
-            <button type="submit" class="btn btn-warning">
-                <i class="fas fa-bell"></i> Remind all pending (SMS)
-            </button>
-        </form>
+        @if (Model.UseWhatsAppClickToChat)
+        {
+            <p class="text-muted small mb-2">
+                Use the <strong>WhatsApp</strong> link on each pending flat (opens association WhatsApp on <strong>9063920689</strong> — review message, then tap <strong>Send</strong>). Automatic MSG91 API is paused until templates work in MSG91.
+            </p>
+        }
+        else
+        {
+            <form asp-action="SendReminders" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="year" value="@Model.Year" />
+                <input type="hidden" name="month" value="@Model.Month" />
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-bell"></i> Remind all pending
+                </button>
+            </form>
+        }
         <a asp-controller="Integrations" asp-action="Index" class="btn btn-outline-secondary ms-2">
-            Configure Razorpay / SMS
+            Configure Razorpay / messaging
         </a>
         <a asp-controller="AuditLog" asp-action="Index" class="btn btn-outline-secondary ms-1">
             Activity log
@@ -148,14 +157,31 @@
                         <td class="text-nowrap">
                             @if (!row.IsPaid)
                             {
-                                <form asp-action="RemindFlat" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="maintenanceId" value="@row.MaintenanceId" />
-                                    <input type="hidden" name="year" value="@Model.Year" />
-                                    <input type="hidden" name="month" value="@Model.Month" />
-                                    <button type="submit" class="btn btn-link btn-sm p-0">Remind</button>
-                                </form>
-                                <span>|</span>
+                                @if (!string.IsNullOrEmpty(row.WhatsAppReminderUrl))
+                                {
+                                    <a href="@row.WhatsAppReminderUrl" target="_blank" rel="noopener"
+                                       class="btn btn-link btn-sm p-0 text-success fw-semibold"
+                                       title="Opens WhatsApp with reminder text">
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    </a>
+                                    <span>|</span>
+                                }
+                                else if (Model.UseWhatsAppClickToChat)
+                                {
+                                    <span class="text-muted small" title="Add login mobile on Residents">No mobile</span>
+                                    <span>|</span>
+                                }
+                                else
+                                {
+                                    <form asp-action="RemindFlat" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="maintenanceId" value="@row.MaintenanceId" />
+                                        <input type="hidden" name="year" value="@Model.Year" />
+                                        <input type="hidden" name="month" value="@Model.Month" />
+                                        <button type="submit" class="btn btn-link btn-sm p-0">Remind</button>
+                                    </form>
+                                    <span>|</span>
+                                }
                                 <button type="button" class="btn btn-link btn-sm p-0"
                                         data-bs-toggle="collapse" data-bs-target="#cash-@row.MaintenanceId">
                                     Mark cash

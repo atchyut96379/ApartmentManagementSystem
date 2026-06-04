@@ -46,6 +46,25 @@ namespace ApartmentManagementSystem.Models
         [Display(Name = "MSG91 Flow / Template ID (India DLT)")]
         public string? Msg91FlowId { get; set; }
 
+        [Display(Name = "Enable WhatsApp reminders")]
+        public bool EnableWhatsAppReminders { get; set; } = true;
+
+        public string WhatsAppProvider { get; set; } = "ClickToChat";
+
+        [Display(Name = "Enable MSG91 WhatsApp API (automatic send)")]
+        public bool Msg91WhatsAppApiEnabled { get; set; }
+
+        [Display(Name = "MSG91 WhatsApp number (91xxxxxxxxxx)")]
+        public string? Msg91WhatsAppIntegratedNumber { get; set; }
+
+        [Display(Name = "MSG91 WhatsApp template name")]
+        public string? Msg91WhatsAppTemplateName { get; set; }
+
+        public string? Msg91WhatsAppTemplateLanguage { get; set; }
+
+        [Display(Name = "MSG91 WhatsApp template namespace (optional)")]
+        public string? Msg91WhatsAppTemplateNamespace { get; set; }
+
         public string PaymentProvider { get; set; } = "Simulation";
 
         public string? RazorpayKeyId { get; set; }

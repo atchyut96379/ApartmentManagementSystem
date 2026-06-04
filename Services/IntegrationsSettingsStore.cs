@@ -101,6 +101,13 @@ namespace ApartmentManagementSystem.Services
                 Msg91AuthKey = MaskIfOnFile(local?.Notification?.Msg91AuthKey),
                 Msg91SenderId = notification.Msg91SenderId,
                 Msg91FlowId = notification.Msg91FlowId,
+                EnableWhatsAppReminders = notification.EnableWhatsAppReminders,
+                WhatsAppProvider = notification.WhatsAppProvider,
+                Msg91WhatsAppApiEnabled = notification.Msg91WhatsAppApiEnabled,
+                Msg91WhatsAppIntegratedNumber = notification.Msg91WhatsAppIntegratedNumber,
+                Msg91WhatsAppTemplateName = notification.Msg91WhatsAppTemplateName,
+                Msg91WhatsAppTemplateLanguage = notification.Msg91WhatsAppTemplateLanguage,
+                Msg91WhatsAppTemplateNamespace = notification.Msg91WhatsAppTemplateNamespace,
                 PaymentProvider = payment.Provider,
                 RazorpayKeyId = payment.Razorpay.KeyId,
                 AppUrl = string.IsNullOrWhiteSpace(app.AppUrl)
@@ -134,6 +141,19 @@ namespace ApartmentManagementSystem.Services
             existing.Notification.TwilioFromNumber = model.TwilioFromNumber?.Trim() ?? string.Empty;
             existing.Notification.Msg91SenderId = model.Msg91SenderId?.Trim() ?? string.Empty;
             existing.Notification.Msg91FlowId = model.Msg91FlowId?.Trim() ?? string.Empty;
+            existing.Notification.EnableWhatsAppReminders = model.EnableWhatsAppReminders;
+            existing.Notification.WhatsAppProvider = model.WhatsAppProvider.Trim();
+            existing.Notification.Msg91WhatsAppApiEnabled = model.Msg91WhatsAppApiEnabled;
+            existing.Notification.Msg91WhatsAppIntegratedNumber =
+                model.Msg91WhatsAppIntegratedNumber?.Trim() ?? string.Empty;
+            existing.Notification.Msg91WhatsAppTemplateName =
+                model.Msg91WhatsAppTemplateName?.Trim() ?? string.Empty;
+            existing.Notification.Msg91WhatsAppTemplateLanguage =
+                string.IsNullOrWhiteSpace(model.Msg91WhatsAppTemplateLanguage)
+                    ? "en"
+                    : model.Msg91WhatsAppTemplateLanguage.Trim();
+            existing.Notification.Msg91WhatsAppTemplateNamespace =
+                model.Msg91WhatsAppTemplateNamespace?.Trim() ?? string.Empty;
 
             if (!string.IsNullOrWhiteSpace(model.SmtpPassword))
             {
@@ -204,6 +224,8 @@ namespace ApartmentManagementSystem.Services
 
             target.EnableEmail = local.EnableEmail;
             target.EnableSms = local.EnableSms;
+            target.EnableWhatsAppReminders = local.EnableWhatsAppReminders;
+            target.Msg91WhatsAppApiEnabled = local.Msg91WhatsAppApiEnabled;
             target.SendConfirmationAfterPayment = local.SendConfirmationAfterPayment;
             target.EnableScheduledReminders = local.EnableScheduledReminders;
             target.ReminderHourLocal = local.ReminderHourLocal > 0
@@ -228,6 +250,11 @@ namespace ApartmentManagementSystem.Services
             OverlayIfSet(local.Msg91AuthKey, v => target.Msg91AuthKey = v);
             OverlayIfSet(local.Msg91SenderId, v => target.Msg91SenderId = v);
             OverlayIfSet(local.Msg91FlowId, v => target.Msg91FlowId = v);
+            OverlayIfSet(local.WhatsAppProvider, v => target.WhatsAppProvider = v);
+            OverlayIfSet(local.Msg91WhatsAppIntegratedNumber, v => target.Msg91WhatsAppIntegratedNumber = v);
+            OverlayIfSet(local.Msg91WhatsAppTemplateName, v => target.Msg91WhatsAppTemplateName = v);
+            OverlayIfSet(local.Msg91WhatsAppTemplateLanguage, v => target.Msg91WhatsAppTemplateLanguage = v);
+            OverlayIfSet(local.Msg91WhatsAppTemplateNamespace, v => target.Msg91WhatsAppTemplateNamespace = v);
         }
 
         private static void OverlayIfSet(string? value, Action<string> apply)

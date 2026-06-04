@@ -58,20 +58,22 @@ namespace ApartmentManagementSystem.Controllers
                 AuditActions.PaymentReminderSent,
                 $"Bulk SMS reminders ({month} {year}): {result.SmsSent} sent, {result.Skipped} skipped.");
 
-            if (result.SmsSent == 0 && result.Errors.Count == 0)
+            var sentTotal = result.SmsSent + result.WhatsAppSent;
+            if (sentTotal == 0 && result.Errors.Count == 0)
             {
                 TempData["Success"] =
                     "No pending flats for this month, or all skipped. Check billing period and resident mobile numbers.";
             }
-            else if (result.SmsSent > 0)
+            else if (sentTotal > 0)
             {
+                var channel = result.WhatsAppSent > 0 ? "WhatsApp" : "SMS";
                 TempData["Success"] =
-                    $"SMS reminders sent: {result.SmsSent}. Skipped: {result.Skipped}.";
+                    $"{channel} reminders sent: {sentTotal}. Skipped: {result.Skipped}.";
             }
             else
             {
                 TempData["Success"] =
-                    $"No SMS sent. Skipped: {result.Skipped}. Configure MSG91 under Integrations.";
+                    $"No reminders sent. Skipped: {result.Skipped}. See Integrations or use per-flat WhatsApp links.";
             }
 
             if (result.Errors.Count > 0)
@@ -93,19 +95,30 @@ namespace ApartmentManagementSystem.Controllers
             if (!result.Sent)
             {
                 TempData["Error"] = result.Error ?? "Could not send reminder.";
+                return RedirectToAction(nameof(Index), new { year, month });
             }
-            else
+
+            if (result.UseWhatsAppRedirect && !string.IsNullOrWhiteSpace(result.WhatsAppUrl))
             {
                 await _auditLog.LogAsync(
                     AuditActions.PaymentReminderSent,
-                    $"Reminder sent to flat {result.FlatNumber} ({result.ResidentName}).",
+                    $"WhatsApp reminder opened for flat {result.FlatNumber} ({result.ResidentName}).",
                     entityType: "Maintenance",
                     entityId: maintenanceId,
                     flatNumber: result.FlatNumber);
 
-                TempData["Success"] =
-                    $"SMS reminder sent to {result.ResidentName} (flat {result.FlatNumber}).";
+                return Redirect(result.WhatsAppUrl);
             }
+
+            await _auditLog.LogAsync(
+                AuditActions.PaymentReminderSent,
+                $"{result.Channel ?? "Reminder"} sent to flat {result.FlatNumber} ({result.ResidentName}).",
+                entityType: "Maintenance",
+                entityId: maintenanceId,
+                flatNumber: result.FlatNumber);
+
+            TempData["Success"] =
+                $"{result.Channel ?? "Reminder"} sent to {result.ResidentName} (flat {result.FlatNumber}).";
 
             return RedirectToAction(nameof(Index), new { year, month });
         }

@@ -12,6 +12,14 @@ namespace ApartmentManagementSystem.Models
 
         public string SmsProvider { get; set; } = string.Empty;
 
+        public bool WhatsAppReady { get; set; }
+
+        public string WhatsAppStatus { get; set; } = string.Empty;
+
+        public string WhatsAppProvider { get; set; } = string.Empty;
+
+        public bool WhatsAppApiReady { get; set; }
+
         public bool RazorpayReady { get; set; }
 
         public string PaymentProvider { get; set; } = string.Empty;
